@@ -65,8 +65,8 @@ class AppDialog(QtGui.QWidget):
         Plate Path Select
         """
         file_dialog = ileName = QtGui.QFileDialog().getExistingDirectory(None, 
-        'Output directory', "/show/climbers/product/scan")
-        #'Output directory', QtCore.QDir.homePath())
+        'Output directory', 
+        os.path.join(self._app.sgtk.project_path,'product','scan'))
         
         self.ui.lineEdit.setText(file_dialog)
 
@@ -89,5 +89,6 @@ class AppDialog(QtGui.QWidget):
         excel_writer.write_model_to_excel(self.ui.seq_model_view.model())
     
     def _publish(self):
-        
-        publish_actor = publish.Publish(self.ui.seq_model_view.model(),0)
+        model = self.ui.seq_model_view.model()
+        for row in range(0,model.rowCount(None)):
+            publish.Publish(model,row)

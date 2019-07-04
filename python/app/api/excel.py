@@ -23,7 +23,7 @@ def _create_seq_array(sequences):
         info.append(QtGui.QCheckBox())
         info.append("")
         info.append("")
-        info.append("")
+        info.append("org")
         info.append(seq.dirname)
         info.append(seq.head().split(".")[0])
         info.append(seq.format("%p"))
