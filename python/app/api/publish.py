@@ -23,7 +23,8 @@ class Publish:
         self.create_shot()
         self._get_version()
         self.create_version()
-        self.update_shot_info()
+        if self.seq_type == "org":
+            self.update_shot_info()
 
         self.nuke_script = self.create_nuke_script()
         self.sg_script = self.create_sg_script()
@@ -106,7 +107,10 @@ class Publish:
         desc = {
                 "sg_cut_in" : 1001,
                 "sg_cut_out" : int("1%03d"%len(self.copy_file_list)),
-                "sg_cut_duration": len(self.copy_file_list)
+                "sg_cut_duration": len(self.copy_file_list),
+                "sg_timecode_in": self._get_model_data(12),
+                "sg_timecode_out": self._get_model_data(13),
+
                }
 
         self._sg.update("Shot",self.shot_ent['id'],desc)
@@ -329,7 +333,8 @@ class Publish:
         key = [
                 ['project','is',self.project],
                 ['entity','is',self.shot_ent],
-                ["published_file_type","is",self.published_file_type]
+                ["published_file_type","is",self.published_file_type],
+                ['name','is',self.version_file_name]
                ]
         published_ents = self._sg.find("PublishedFile",key,['version_number'])
         print published_ents
@@ -356,19 +361,23 @@ class Publish:
     def plate_path(self):
         
         temp = os.path.join(self._app.sgtk.project_path,'seq',self.seq_name,
-               self.shot_name,"plate",self.seq_type+"_v%02d"%self.version)
+               self.shot_name,"plate",self.seq_type,"v%03d"%self.version)
         return temp
 
     @property
     def plate_jpg_path(self):
 
         temp = os.path.join(self._app.sgtk.project_path,'seq',self.seq_name,
-               self.shot_name,"plate",self.seq_type+"_v%02d_jpg"%self.version)
+               self.shot_name,"plate",self.seq_type,"v%03d_jpg"%self.version)
         return temp
 
     @property
     def plate_file_name(self):
         temp = self.shot_name + "_"+self.seq_type+"_v%02d"%self.version
+        return temp
+    @property
+    def version_file_name(self):
+        temp = self.shot_name + "_"+self.seq_type
         return temp
     
 
@@ -392,7 +401,7 @@ class Publish:
             "tk": self._app.tank,
             "context": context,
             "path": os.path.join(self.plate_path,self.plate_file_name+".%04d."+file_ext),
-            "name": self.plate_file_name,
+            "name": self.version_file_name,
             "created_by": self.user,
             "version_number": self.version,
             #"thumbnail_path": item.get_thumbnail_as_path(),

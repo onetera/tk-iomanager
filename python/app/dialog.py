@@ -58,6 +58,32 @@ class AppDialog(QtGui.QWidget):
         self.ui.save_excel.clicked.connect(self._save_excel)
 
         self.ui.publish.clicked.connect(self._publish)
+    
+
+    def _set_timecode(self,index):
+
+        row = index.row()
+        column = index.column()
+        if not column in [14,15] :
+            return 
+
+        model = self.ui.seq_model_view.model()
+
+        frame = int(model.data(index,QtCore.Qt.DisplayRole ))
+
+        index = model.createIndex(row,4)
+        dir_name = model.data(index,QtCore.Qt.DisplayRole )
+
+        index = model.createIndex(row,5)
+        head = model.data(index,QtCore.Qt.DisplayRole )
+
+        index = model.createIndex(row,7)
+        tail = model.data(index,QtCore.Qt.DisplayRole )
+
+        time_code = excel.get_time_code(dir_name,head,frame,tail)
+        
+        index = model.createIndex(row,column - 2)
+        model.setData(index,time_code,3)
 
 
     def _set_path(self):
@@ -80,7 +106,7 @@ class AppDialog(QtGui.QWidget):
             model = SeqTableModel(excel.create_excel(path))
 
         self.ui.seq_model_view.setModel(model)
-    
+        model.dataChanged.connect(self._set_timecode)
 
     def _save_excel(self):
         
@@ -91,4 +117,8 @@ class AppDialog(QtGui.QWidget):
     def _publish(self):
         model = self.ui.seq_model_view.model()
         for row in range(0,model.rowCount(None)):
-            publish.Publish(model,row)
+
+            index = model.createIndex(row,0)
+            check = model.data(index,QtCore.Qt.CheckStateRole )
+            if check == QtCore.Qt.CheckState.Checked:
+                publish.Publish(model,row)

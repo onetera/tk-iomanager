@@ -33,6 +33,7 @@ def set_module_path(module_path):
         sys.path.append(module)
 
 import sys
+import os
 import subprocess
 
 try:
@@ -44,7 +45,7 @@ except ImportError:
 
     sys.path.append(rez_path)
 from rez.resolved_context import ResolvedContext
-cotext = ResolvedContext(['tractor','pyseq','Xlrd','XlsxWriter'])
+cotext = ResolvedContext(['tractor','pyseq','Xlrd','XlsxWriter','pydpx_meta','pyopenexr_tk'])
 module_path = cotext.get_environ()['PYTHONPATH']
 set_module_path(module_path)
 
@@ -68,17 +69,18 @@ class StgkStarterApp(Application):
         # that resides inside the python folder in the app. This is where the actual UI
         # and business logic of the app is kept. By using the import_module command,
         # toolkit's code reload mechanism will work properly.
-        app_payload = self.import_module("app")
-
+        try:
+            app_payload = self.import_module("app")
         # now register a *command*, which is normally a menu entry of some kind on a Shotgun
         # menu (but it depends on the engine). The engine will manage this command and 
         # whenever the user requests the command, it will call out to the callback.
 
         # first, set up our callback, calling out to a method inside the app module contained
         # in the python folder of the app
-        menu_callback = lambda : app_payload.dialog.show_dialog(self)
-
+            menu_callback = lambda : app_payload.dialog.show_dialog(self)
         # now register the command with the engine
-        self.engine.register_command("IO Manager", menu_callback)
-        
+            self.engine.register_command("IO Manager", menu_callback)
+        except Exception:
+            import traceback
+            traceback.print_exc()
 
