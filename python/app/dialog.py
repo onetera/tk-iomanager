@@ -77,10 +77,13 @@ class AppDialog(QtGui.QWidget):
         index = model.createIndex(row,5)
         head = model.data(index,QtCore.Qt.DisplayRole )
 
+        index = model.createIndex(row,6)
+        frame_format = model.data(index,QtCore.Qt.DisplayRole )
+
         index = model.createIndex(row,7)
         tail = model.data(index,QtCore.Qt.DisplayRole )
 
-        time_code = excel.get_time_code(dir_name,head,frame,tail)
+        time_code = excel.get_time_code(dir_name,head,frame_format,frame,tail)
         
         index = model.createIndex(row,column - 2)
         model.setData(index,time_code,3)

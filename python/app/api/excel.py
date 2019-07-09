@@ -47,14 +47,14 @@ def _create_seq_array(sequences):
 
 def _get_time_code(seq,frame):
     if seq.tail() == ".exr":
-        exr_file = os.path.join(seq.dirname,seq.head()+"%d"%frame+seq.tail())
+        exr_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%frame+seq.tail())
         exr = OpenEXR.InputFile(exr_file)
         if exr.header().has_key("timeCode"):
             ti = exr.header()['timeCode']
             return "%d:%d:%d:%d"%(ti.hours,ti.minutes,ti.seconds,ti.frame)
         return ""
     elif seq.tail() == ".dpx":
-        dpx_file = os.path.join(seq.dirname,seq.head()+"%d"%frame+seq.tail())
+        dpx_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%frame+seq.tail())
         dpx = pydpx_meta.DpxHeader(dpx_file)
         return dpx.tv_header.time_code
     else:
@@ -62,14 +62,14 @@ def _get_time_code(seq,frame):
 
 def _get_framerate(seq):
     if seq.tail() == ".exr":
-        exr_file = os.path.join(seq.dirname,seq.head()+str(seq.start())+seq.tail())
+        exr_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
         exr = OpenEXR.InputFile(exr_file)
         if exr.header().has_key("framesPerSecond"):
             fr = exr.header()['framesPerSecond']
             return  fr.n 
         return ""
     elif seq.tail() == ".dpx":
-        dpx_file = os.path.join(seq.dirname,seq.head()+str(seq.start())+seq.tail())
+        dpx_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
         dpx = pydpx_meta.DpxHeader(dpx_file)
         return int(dpx.raw_header.TvHeader.FrameRate)
     else:
@@ -77,14 +77,14 @@ def _get_framerate(seq):
 
 def _get_resolution(seq):
     if seq.tail() == ".exr":
-        exr_file = os.path.join(seq.dirname,seq.head()+str(seq.start())+seq.tail())
+        exr_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
         exr = OpenEXR.InputFile(exr_file)
         if exr.header().has_key("dataWindow"):
             res = exr.header()['dataWindow']
             return "%d x %d"%(res.max.x+1,res.max.y+1)
         return ""
     elif seq.tail() == ".dpx":
-        dpx_file = os.path.join(seq.dirname,seq.head()+str(seq.start())+seq.tail())
+        dpx_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
         dpx = pydpx_meta.DpxHeader(dpx_file)
         return '%d x %d'%(dpx.raw_header.OrientHeader.XOriginalSize,
                           dpx.raw_header.OrientHeader.YOriginalSize)
@@ -226,16 +226,16 @@ class ExcelWriteModel:
         self.wWorksheet.write( row, colName, string )
 
 
-def get_time_code(dir_name,head,frame,tail):
+def get_time_code(dir_name,head,frame_format,frame,tail):
     if tail == "exr":
-        exr_file = os.path.join(dir_name,head+"."+str(frame)+"."+tail)
+        exr_file = os.path.join(dir_name,head+"."+frame_format%frame+"."+tail)
         exr = OpenEXR.InputFile(exr_file)
         if exr.header().has_key("timeCode"):
             ti = exr.header()['timeCode']
             return "%d:%d:%d:%d"%(ti.hours,ti.minutes,ti.seconds,ti.frame)
         return ""
     elif tail == "dpx":
-        dpx_file = os.path.join(dir_name,head+"."+str(frame)+"."+tail)
+        dpx_file = os.path.join(dir_name,head+"."+frame_format%frame+"."+tail)
         dpx = pydpx_meta.DpxHeader(dpx_file)
         return dpx.tv_header.time_code
     else:
