@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialog.ui'
 #
-# Created: Mon Jul  1 17:18:30 2019
+# Created: Tue Jul  9 18:28:09 2019
 #      by: pyside-uic 0.2.15 running on PySide 1.2.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -30,13 +30,24 @@ class Ui_Dialog(object):
         self.create_excel.setObjectName("create_excel")
         self.horizontalLayout_2.addWidget(self.create_excel)
         self.verticalLayout.addLayout(self.horizontalLayout_2)
+        self.horizontalLayout_3 = QtGui.QHBoxLayout()
+        self.horizontalLayout_3.setObjectName("horizontalLayout_3")
+        self.check_all_btn = QtGui.QPushButton(Dialog)
+        self.check_all_btn.setObjectName("check_all_btn")
+        self.horizontalLayout_3.addWidget(self.check_all_btn)
+        self.uncheck_all_btn = QtGui.QPushButton(Dialog)
+        self.uncheck_all_btn.setObjectName("uncheck_all_btn")
+        self.horizontalLayout_3.addWidget(self.uncheck_all_btn)
+        spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.horizontalLayout_3.addItem(spacerItem)
+        self.verticalLayout.addLayout(self.horizontalLayout_3)
         self.seq_model_view = QtGui.QTableView(Dialog)
         self.seq_model_view.setObjectName("seq_model_view")
         self.verticalLayout.addWidget(self.seq_model_view)
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
-        spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
-        self.horizontalLayout.addItem(spacerItem)
+        spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
+        self.horizontalLayout.addItem(spacerItem1)
         self.validate_excel = QtGui.QPushButton(Dialog)
         self.validate_excel.setObjectName("validate_excel")
         self.horizontalLayout.addWidget(self.validate_excel)
@@ -55,7 +66,9 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(QtGui.QApplication.translate("Dialog", "The Current Sgtk Environment", None, QtGui.QApplication.UnicodeUTF8))
         self.label.setText(QtGui.QApplication.translate("Dialog", "Path : ", None, QtGui.QApplication.UnicodeUTF8))
         self.select_dir.setText(QtGui.QApplication.translate("Dialog", "Select", None, QtGui.QApplication.UnicodeUTF8))
-        self.create_excel.setText(QtGui.QApplication.translate("Dialog", "Create Excel", None, QtGui.QApplication.UnicodeUTF8))
+        self.create_excel.setText(QtGui.QApplication.translate("Dialog", "Load", None, QtGui.QApplication.UnicodeUTF8))
+        self.check_all_btn.setText(QtGui.QApplication.translate("Dialog", "Check All", None, QtGui.QApplication.UnicodeUTF8))
+        self.uncheck_all_btn.setText(QtGui.QApplication.translate("Dialog", "Uncheck All", None, QtGui.QApplication.UnicodeUTF8))
         self.validate_excel.setText(QtGui.QApplication.translate("Dialog", "Validate", None, QtGui.QApplication.UnicodeUTF8))
         self.save_excel.setText(QtGui.QApplication.translate("Dialog", "Save", None, QtGui.QApplication.UnicodeUTF8))
         self.publish.setText(QtGui.QApplication.translate("Dialog", "Publish", None, QtGui.QApplication.UnicodeUTF8))

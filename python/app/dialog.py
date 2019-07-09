@@ -58,7 +58,26 @@ class AppDialog(QtGui.QWidget):
         self.ui.save_excel.clicked.connect(self._save_excel)
 
         self.ui.publish.clicked.connect(self._publish)
+        self.ui.check_all_btn.clicked.connect(self._check_all)
+        self.ui.uncheck_all_btn.clicked.connect(self._uncheck_all)
+
     
+    def _check_all(self):
+        
+        model = self.ui.seq_model_view.model()
+        if model:
+            for row in range(0,model.rowCount(None)):
+                index = model.createIndex(row,0)
+                model.setData(index,QtCore.Qt.Checked,QtCore.Qt.CheckStateRole)
+
+    def _uncheck_all(self):
+        
+        model = self.ui.seq_model_view.model()
+        if model:
+            for row in range(0,model.rowCount(None)):
+                index = model.createIndex(row,0)
+                model.setData(index,QtCore.Qt.Unchecked,QtCore.Qt.CheckStateRole)
+           
 
     def _set_timecode(self,index):
 

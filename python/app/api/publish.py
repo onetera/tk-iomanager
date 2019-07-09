@@ -310,12 +310,12 @@ class Publish:
 
         start_index = self._get_model_data(14)
         end_index = self._get_model_data(15)
-        #pad = self._get_model_data(6)
+        pad = self._get_model_data(6)
         file_name  = self._get_model_data(5)
         file_ext = self._get_model_data(7)
         
         for i in range(int(start_index),int(end_index)+1):
-            copy_file = file_name + "."+str(i)+"."+file_ext
+            copy_file = file_name + "."+pad%i+"."+file_ext
             file_list.append(copy_file)
         
         return file_list
