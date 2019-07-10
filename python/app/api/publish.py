@@ -131,7 +131,7 @@ class Publish:
         for index in range(0,len(self.copy_file_list)):
             cmd = ["/bin/cp","-fv"]
             cmd.append(os.path.join(scan_path,self.copy_file_list[index]))
-            cmd.append(os.path.join(self.plate_path,self.plate_file_name+".1%03d."%(index+1)+file_ext))
+            cmd.append(os.path.join(self.plate_path,self.plate_file_name+"."+str(1000+index+1)+"."+file_ext))
             print cmd
             command = author.Command(argv=cmd)
             self.copy_task.addCommand(command)
