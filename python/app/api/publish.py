@@ -106,7 +106,7 @@ class Publish:
     def update_shot_info(self):
         desc = {
                 "sg_cut_in" : 1001,
-                "sg_cut_out" : int("1%03d"%len(self.copy_file_list)),
+                "sg_cut_out" : 1000+len(self.copy_file_list),
                 "sg_cut_duration": len(self.copy_file_list),
                 "sg_timecode_in": self._get_model_data(12),
                 "sg_timecode_out": self._get_model_data(13),
@@ -218,11 +218,11 @@ class Publish:
         nk = ''
         nk += 'import nuke\n'
         nk += 'nuke.knob("root.first_frame", "{}" )\n'.format( "1001" )
-        nk += 'nuke.knob("root.last_frame", "{}" )\n'.format("1%03d"%len(self.copy_file_list) )
+        nk += 'nuke.knob("root.last_frame", "{}" )\n'.format("%d"%(1000+len(self.copy_file_list)) )
         #nk += 'nuke.knob("root.fps", "{}" )\n'.format( framerate )
         nk += 'read = nuke.nodes.Read( name="Read1",file="{}" )\n'.format( read_path )
         nk += 'read["first"].setValue( {} )\n'.format( "1001" )
-        nk += 'read["last"].setValue( {} )\n'.format( "1%03d"%len(self.copy_file_list) )
+        nk += 'read["last"].setValue( {} )\n'.format( "%d"%(1000+len(self.copy_file_list)) )
         tg = 'read'
     
         #gizmo = ''
@@ -246,7 +246,7 @@ class Publish:
         nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
         nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
         #nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
-        nk += 'nuke.execute(write,1001,1%03d,1)\n'%(len(self.copy_file_list))
+        nk += 'nuke.execute(write,1001,%d,1)\n'%(1000+len(self.copy_file_list))
 
         nk += 'output = "{}"\n'.format( mov_path )
         nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n'% tg
@@ -255,7 +255,7 @@ class Publish:
         nk += 'write["mov64_codec"].setValue( "apcn")\n'
         #nk += 'write["colorspace"].setValue( "Cineon" )\n'
         #nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
-        nk += 'nuke.execute(write,1001,1%03d,1)\n'%(len(self.copy_file_list))
+        nk += 'nuke.execute(write,1001,%d,1)\n'%(1000+len(self.copy_file_list))
 
 
 
