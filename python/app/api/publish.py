@@ -261,7 +261,9 @@ class Publish:
 
         
         if not os.path.exists( os.path.dirname(tmp_nuke_script_file) ):
+            cur_umask = os.umask(0)
             os.makedirs(os.path.dirname(tmp_nuke_script_file),0775 )
+            os.umask(cur_umask)
 
         with open( tmp_nuke_script_file, 'w' ) as f:
             f.write( nk )
