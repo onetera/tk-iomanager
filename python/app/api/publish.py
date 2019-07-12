@@ -140,7 +140,11 @@ class Publish:
     
     def create_version(self):
         
-        
+        if self.seq_type == "org":
+            version_type = "org"
+        else:
+            version_type = "src"
+
         mov_path = os.path.join(self._app.sgtk.project_path,'seq',
                                 self.seq_name,
                                 self.shot_name,"plate",
@@ -161,7 +165,7 @@ class Publish:
                 "sg_status_list" : "rev",
                 'entity' : self.shot_ent,
                 "sg_path_to_movie" : mov_path,
-                "sg_version_type" : self.seq_type,
+                "sg_version_type" : version_type,
                 }
         self.version_ent = self._sg.create("Version",desc)
     
