@@ -1,6 +1,7 @@
 
 import os
 import sgtk
+import pyseq
 from sgtk.platform.qt import QtCore, QtGui
 import tractor.api.author as author
 
@@ -306,7 +307,7 @@ class Publish:
 
     @property
     def plate_file_name(self):
-        temp = self.shot_name + "_"+self.seq_type+"_v%02d"%self.version
+        temp = self.shot_name + "_"+self.seq_type+"_v%03d"%self.version
         return temp
     
     @property
@@ -314,14 +315,17 @@ class Publish:
         
         file_list = []
 
+        scan_path = self._get_model_data(4)
         start_index = self._get_model_data(14)
         end_index = self._get_model_data(15)
         pad = self._get_model_data(6)
         file_name  = self._get_model_data(5)
         file_ext = self._get_model_data(7)
+        sequence = pyseq.get_sequences(scan_path)
+        file_format = sequence[0].format("%h%p%t")
         
         for i in range(int(start_index),int(end_index)+1):
-            copy_file = file_name + "."+pad%i+"."+file_ext
+            copy_file = file_format%i
             file_list.append(copy_file)
         
         return file_list
@@ -379,7 +383,7 @@ class Publish:
 
     @property
     def plate_file_name(self):
-        temp = self.shot_name + "_"+self.seq_type+"_v%02d"%self.version
+        temp = self.shot_name + "_"+self.seq_type+"_v%03d"%self.version
         return temp
     @property
     def version_file_name(self):
