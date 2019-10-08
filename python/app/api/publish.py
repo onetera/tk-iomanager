@@ -5,6 +5,47 @@ import pyseq
 from sgtk.platform.qt import QtCore, QtGui
 import tractor.api.author as author
 
+codecs = {
+    "Apple ProRes 4444":"ap4h",
+    "Apple ProRes 422 HQ":"apch",
+    "Apple ProRes 422":"apcn",
+    "Apple ProRes 422 LT":"apcs",
+    "Apple ProRes 422 Proxy":"apco",
+    "Avid DNxHD Codec":"AVdn"}
+
+class Output(object):
+    
+
+    def __init__(self,info):
+        
+        self.mov_fps = float(info['sg_fps'])
+        self._set_file_type(info['sg_out_format'])
+        self._set_colorspace(info['sg_colorspace'],info)
+        self.mov_codec = codecs[info['sg_mov_codec']]
+    
+    def _set_file_type(self,text):
+        
+        if text =="exr 32bit":
+            self.file_type = "exr"
+            self.datatype = "32 bit float"
+        if text =="exr 16bit":
+            self.file_type = "exr"
+            self.datatype = "16 bit half"
+        if text =="dpx 10bit":
+            self.file_type = "dpx"
+            self.datatype = "10 bit"
+    
+    def _set_colorspace(self,text,info):
+        
+        if not text.find("ACES") == -1 :
+            #nuke.root()['colorManagement'].setValue("OCIO")
+            #nuke.root()['OCIO_config'].setValue("aces_1.0.1")
+            self.colorspace = "ACES - %s"%text
+            self.mov_colorspace = info['sg_mov_colorspace']
+        else:
+            #nuke.root()['colorManagement'].setValue("Nuke")
+            self.colorspace = text
+            self.mov_colorspace = text
 
 class Publish:
     
@@ -111,6 +152,7 @@ class Publish:
                 "sg_cut_duration": len(self.copy_file_list),
                 "sg_timecode_in": self._get_model_data(12),
                 "sg_timecode_out": self._get_model_data(13),
+                "sg_resolution": self._get_model_data(8),
 
                }
 
@@ -152,6 +194,7 @@ class Publish:
                                 self.plate_file_name+".mov")
         
         mov_name = self.plate_file_name+".mov"
+        read_path = os.path.join(self.plate_path,self.plate_file_name+".%04d."+self.file_ext)
         
         key = [
                 ['entity','is',self.shot_ent],
@@ -166,13 +209,17 @@ class Publish:
                 "sg_status_list" : "rev",
                 'entity' : self.shot_ent,
                 "sg_path_to_movie" : mov_path,
+                "sg_path_to_frames" : read_path,
                 "sg_version_type" : version_type,
                 }
         self.version_ent = self._sg.create("Version",desc)
     
     def create_jpg_job(self):
+
         self.jpg_task = author.Task(title = "render jpg")
         cmd = ['rez-env','nuke','--','nuke','-ix',self.nuke_script]
+        if not self.colorspace.find("ACES") == -1: 
+            cmd = ['rez-env','nuke','ocio_config','--','nuke','-ix',self.nuke_script]
         command = author.Command(argv=cmd)
         self.jpg_task.addCommand(command)
         self.sg_task.addChild(self.jpg_task)
@@ -207,7 +254,24 @@ class Publish:
 
     def create_nuke_script(self):
         
+        width,height = self._get_model_data(8).split("x")
+        app = sgtk.platform.current_bundle()
+        context = app.context
+        project = context.project
+        shotgun = app.sgtk.shotgun
+
+        output_info = shotgun.find_one("Project",[['id','is',project['id']]],
+                               ['sg_colorspace','sg_mov_codec',
+                               'sg_out_format','sg_fps','sg_mov_colorspace'])
+
+    
+    
+        setting = Output(output_info)
+
+        self.colorspace = setting.colorspace
+        
         jpg_path = os.path.join(self.plate_jpg_path,self.plate_file_name+".%04d.jpg")
+        jpg_2k_path = os.path.join(self.plate_jpg_2k_path,self.plate_file_name+".%04d.jpg")
         read_path = os.path.join(self.plate_path,self.plate_file_name+".%04d."+self.file_ext)
         tmp_nuke_script_file = os.path.join(self._app.sgtk.project_path,'seq',
                                 self.seq_name,
@@ -243,21 +307,41 @@ class Publish:
         #    nk += 'colorspaceIn="{}",'.format( cs_in )
         #    nk += 'colorspaceOut ="{}" )\n'.format( cs_out )
         #    tg = 'vf'
+        if int(width) > 2048:
+            
+            nk += 'reformat = reformat = nuke.nodes.Reformat(inputs=[%s],type=2,scale=.5)\n' %tg
+            reformat = 'reformat'
+            nk += 'output = "{}"\n'.format( jpg_2k_path )
+            nk += 'write   = nuke.nodes.Write(name="ww_write_2k", inputs = [%s],file=output )\n'% reformat
+            nk += 'write["file_type"].setValue( "jpeg" )\n'
+            nk += 'write["create_directories"].setValue(True)\n'
+            nk += 'write["colorspace"].setValue("{}")\n'.format(setting.mov_colorspace)
+            nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
+            nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
+            nk += 'nuke.execute(write,1001,%d,1)\n'%(1000+len(self.copy_file_list))
 
         nk += 'output = "{}"\n'.format( jpg_path )
         nk += 'write   = nuke.nodes.Write(name="ww_write", inputs = [%s],file=output )\n'% tg
         nk += 'write["file_type"].setValue( "jpeg" )\n'
         nk += 'write["create_directories"].setValue(True)\n'
+        nk += 'write["colorspace"].setValue("{}")\n'.format(setting.mov_colorspace)
         nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
         nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
         #nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
         nk += 'nuke.execute(write,1001,%d,1)\n'%(1000+len(self.copy_file_list))
 
+        if int(width) > 2048:
+            nk += 'reformat = reformat = nuke.nodes.Reformat(inputs=[%s],type=2,scale=.5)\n' %tg
+            reformat = 'reformat'
         nk += 'output = "{}"\n'.format( mov_path )
-        nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n'% tg
+        if int(width) > 2048:
+            nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n'% reformat
+        else:
+            nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n'% tg
         nk += 'write["file_type"].setValue( "mov" )\n'
         nk += 'write["create_directories"].setValue(True)\n'
         nk += 'write["mov64_codec"].setValue( "apcn")\n'
+        nk += 'write["colorspace"].setValue("{}")\n'.format(setting.mov_colorspace)
         #nk += 'write["colorspace"].setValue( "Cineon" )\n'
         #nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
         nk += 'nuke.execute(write,1001,%d,1)\n'%(1000+len(self.copy_file_list))
@@ -379,6 +463,13 @@ class Publish:
 
         temp = os.path.join(self._app.sgtk.project_path,'seq',self.seq_name,
                self.shot_name,"plate",self.seq_type,"v%03d_jpg"%self.version)
+        return temp
+
+    @property
+    def plate_jpg_2k_path(self):
+
+        temp = os.path.join(self._app.sgtk.project_path,'seq',self.seq_name,
+               self.shot_name,"plate",self.seq_type,"v%03d_jpg_2k"%self.version)
         return temp
 
     @property
