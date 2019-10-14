@@ -45,7 +45,7 @@ except ImportError:
 
     sys.path.append(rez_path)
 from rez.resolved_context import ResolvedContext
-cotext = ResolvedContext(['tractor','pyseq','Xlrd','XlsxWriter','pydpx_meta','pyopenexr_tk'])
+cotext = ResolvedContext(['tractor','pyseq','Xlrd','XlsxWriter','pydpx_meta','pyopenexr_tk','Pillow'])
 module_path = cotext.get_environ()['PYTHONPATH']
 set_module_path(module_path)
 

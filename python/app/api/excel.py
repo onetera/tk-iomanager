@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 import glob
 import os
+import sys
 import xlsxwriter
 import pyseq
 import xlrd
 import pydpx_meta
 import OpenEXR
+from PIL import Image
 from sgtk.platform.qt import QtCore, QtGui
 
 
@@ -76,6 +78,8 @@ def _get_framerate(seq):
         return ""
 
 def _get_resolution(seq):
+
+
     if seq.tail() == ".exr":
         exr_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
         exr = OpenEXR.InputFile(exr_file)
@@ -88,6 +92,10 @@ def _get_resolution(seq):
         dpx = pydpx_meta.DpxHeader(dpx_file)
         return '%d x %d'%(dpx.raw_header.OrientHeader.XOriginalSize,
                           dpx.raw_header.OrientHeader.YOriginalSize)
+    elif seq.tail() in [ '.jpg','.jpeg']:
+        jpg_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
+        jpeg = Image.open(jpg_file)
+        return '%d x %d'%(jpeg.size[0],jpeg.size[1])
     else:
         return ""
 
