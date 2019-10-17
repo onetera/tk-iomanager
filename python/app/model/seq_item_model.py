@@ -1,4 +1,5 @@
 from sgtk.platform.qt import QtCore, QtGui
+from ..api.constant import *
 
 class SeqTableModel(QtCore.QAbstractTableModel):
     
@@ -6,7 +7,8 @@ class SeqTableModel(QtCore.QAbstractTableModel):
 
         QtCore.QAbstractTableModel.__init__(self, parent, *args)
         self.arraydata = array
-        self.header = ["c","Roll","Shot name","Type","Scan path","Scan Name","pad","Ext","format","Start frame","End Frame","Range","TimeCode IN","TimeCode Out","In","Out","Fr","Date"]
+        #self.header = ["c","Roll","Shot name","Type","Scan path","Scan Name","pad","Ext","format","Start frame","End Frame","Range","TimeCode IN","TimeCode Out","In","Out","Fr","Date"]
+        self.header = MODEL_KEYS.keys()
 
     def rowCount(self, parent):
         return len(self.arraydata)
@@ -36,31 +38,20 @@ class SeqTableModel(QtCore.QAbstractTableModel):
                 return QtCore.Qt.Unchecked
 
     def flags(self, index):
-        if index.column() in [ 1,2,3,14,15,0 ]:
-            return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsUserCheckable 
+        #if index.column() in [ 1,2,3,14,15,0 ]:
+        return QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsSelectable | QtCore.Qt.ItemIsEditable | QtCore.Qt.ItemIsUserCheckable 
 
 
     def setData(self, index, value, role):
         if not index.isValid():
             return False
-        # print(">>> setData() role = ", role)
-        # print(">>> setData() index.column() = ", index.column())
-        # print(">>> setData() value = ", value)
         if role == QtCore.Qt.CheckStateRole and index.column() == 0:
-            #print(">>> setData() role = ", role)
-            #print(">>> setData() index.column() = ", index.column())
             if value == QtCore.Qt.Checked:
                 self.arraydata[index.row()][index.column()].setChecked(True)
-                # if studentInfos.size() > index.row():
-                #     emit StudentInfoIsChecked(studentInfos[index.row()])     
             else:
                 self.arraydata[index.row()][index.column()].setChecked(False)
         else:
-            #print(">>> setData() role = ", role)
-            #print(">>> setData() index.column() = ", index.column())
 
             self.arraydata[index.row()][index.column()] = value
-        #print(">>> setData() index.row = ", index.row())
-        #print(">>> setData() index.column = ", index.column())
         self.dataChanged.emit(index, index)
 

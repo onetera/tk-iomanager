@@ -4,6 +4,7 @@ import sgtk
 import pyseq
 from sgtk.platform.qt import QtCore, QtGui
 import tractor.api.author as author
+from .constant import *
 
 codecs = {
     "Apple ProRes 4444":"ap4h",
@@ -47,18 +48,119 @@ class Output(object):
             self.colorspace = text
             self.mov_colorspace = text
 
+
+class MasterInput(object):
+
+    def __init__(self,model,group_model_rows,entity_type):
+
+        self.model = model
+        self.rows = group_model_rows
+        self.entity_type = entity_type
+        self._set_data()
+        self._create_retime_info()
+
+    def _set_data(self):
+        
+        self.entity_name = self._get_data(MODEL_KEYS[self.entity_type])
+        self.scan_path = self._get_data(MODEL_KEYS['scan_path'])
+        self.scan_name = self._get_data(MODEL_KEYS['scan_name'])
+        self.pad = self._get_data(MODEL_KEYS['pad'])
+        self.ext = self._get_data(MODEL_KEYS['ext'])
+        self.resolution = self._get_data(MODEL_KEYS['resolution'])
+        self.start_frame = self._get_data(MODEL_KEYS['start_frame'])
+        self.end_frame = self._get_data(MODEL_KEYS['end_frame'])
+        self.framerate = self._get_data(MODEL_KEYS['framerate'])
+        self.type = self._get_data(MODEL_KEYS['type'])
+    
+    @property
+    def just_in(self):
+
+        if len(self.rows) == 1:
+            return self._get_data(MODEL_KEYS['just_in'])
+        
+        else:
+            temp = []
+            for row in self.rows:
+                temp.append(self._get_data(MODEL_KEYS['just_in'],row))
+
+            return min(temp)
+            
+    @property
+    def just_out(self):
+
+        if len(self.rows) == 1:
+            return self._get_data(MODEL_KEYS['just_out'])
+        
+        else:
+            temp = []
+            for row in self.rows:
+                temp.append(self._get_data(MODEL_KEYS['just_out'],row))
+
+            return max(temp)
+
+    @property
+    def timecode_in(self):
+
+        if len(self.rows) == 1:
+            return self._get_data(MODEL_KEYS['timecode_in'])
+        
+        else:
+            temp = []
+            for row in self.rows:
+                temp.append(self._get_data(MODEL_KEYS['timecode_in'],row))
+
+            return min(temp)
+
+    @property
+    def timecode_out(self):
+
+        if len(self.rows) == 1:
+            return self._get_data(MODEL_KEYS['timecode_out'])
+        
+        else:
+            temp = []
+            for row in self.rows:
+                temp.append(self._get_data(MODEL_KEYS['timecode_out'],row))
+
+            return max(temp)
+
+    
+    def _create_retime_info(self):
+
+        if not self._get_data(MODEL_KEYS['retime_duration']):
+            self.retime_job = False
+            return
+        else:
+            self.retime_info = []
+            self.retime_job = True
+            for row in self.rows:
+                info = {}
+                info['just_in'] = self._get_data(MODEL_KEYS['just_in'],row)
+                info['just_out'] = self._get_data(MODEL_KEYS['just_out'],row)
+                info['retime_start_frame'] = self._get_data(MODEL_KEYS['retime_start_frame'],row)
+                info['retime_duration'] = self._get_data(MODEL_KEYS['retime_duration'],row)
+                info['retime_percent'] = self._get_data(MODEL_KEYS['retime_percent'],row)
+                self.retime_info.append(info)
+    
+        
+    def _get_data(self,col,row=None):
+        if not row:
+            index = self.model.createIndex(self.rows[0],col)
+        else:
+            index = self.model.createIndex(row,col)
+        return self.model.data(index,QtCore.Qt.DisplayRole)
+
 class Publish:
     
-    def __init__(self,model,row,parent=None):
+    def __init__(self,master_input,parent=None):
         
-        self.model = model
-        self.row = row
+        self.master_input = master_input
 
         self._app = sgtk.platform.current_bundle()
         self._sg = self._app.shotgun
         self.project = self._app.context.project
-        self.shot_name = self._get_model_data(2)
-        self.seq_type = self._get_model_data(3)
+        self.shot_name = self.master_input.entity_name
+        self.seq_type = self.master_input.type
         self.user = self._app.context.user
 
         self.create_seq()
@@ -68,14 +170,16 @@ class Publish:
         if self.seq_type == "org":
             self.update_shot_info()
 
+        self.nuke_retime_script = self.create_nuke_retime_script()
         self.nuke_script = self.create_nuke_script()
         self.sg_script = self.create_sg_script()
 
         self.create_job()
+        self.create_temp_job()
         self.create_rm_job()
         self.create_sg_job()
         self.create_jpg_job()
-        self.create_copy_job()
+        self.create_org_job()
         self.submit_job()
 
         self.publish_to_shotgun()
@@ -105,7 +209,6 @@ class Publish:
 
     
     def create_seq(self):
-        print "create seq"
         
         key = [
                 ['project','is',self.project],
@@ -150,22 +253,58 @@ class Publish:
                 "sg_cut_in" : 1001,
                 "sg_cut_out" : 1000+len(self.copy_file_list),
                 "sg_cut_duration": len(self.copy_file_list),
-                "sg_timecode_in": self._get_model_data(12),
-                "sg_timecode_out": self._get_model_data(13),
-                "sg_resolution": self._get_model_data(8),
+                "sg_timecode_in": self.master_input.timecode_in,
+                "sg_timecode_out": self.master_input.timecode_out,
+                "sg_resolution": self.master_input.resolution,
 
                }
 
         self._sg.update("Shot",self.shot_ent['id'],desc)
     
+    
+
+    def create_org_job(self):
+        if self.master_input.retime_job:
+            self.org_task = author.Task(title = "create org")
+            cmd = ['rez-env','nuke','--','nuke','-ix',self.nuke_retime_script]
+            if not self.colorspace.find("ACES") == -1: 
+                cmd = ['rez-env','nuke','ocio_config','--','nuke','-ix',self.nuke_retime_script]
+            command = author.Command(argv=cmd)
+            self.org_task.addCommand(command)
+            self.jpg_task.addChild(self.org_task)
+        else:
+            self.create_copy_job()
+    
+    def create_temp_job(self):
+
+        if not self.master_input.retime_job:
+            return
+
+        scan_path = self.master_input.scan_path
+        file_ext = self.master_input.ext
+        
+        self.copy_task = author.Task(title = "copy temp")
+        cmd = ["/bin/mkdir","-p"]
+        cmd.append(self.tmp_path)
+        command = author.Command(argv=cmd)
+        self.copy_task.addCommand(command)
+
+        for index in range(0,len(self.copy_file_list)):
+            cmd = ["/bin/cp","-fv"]
+            cmd.append(os.path.join(scan_path,self.copy_file_list[index]))
+            cmd.append(os.path.join(self.tmp_path,self.plate_file_name+"."+str(1000+index+1)+"."+file_ext))
+            command = author.Command(argv=cmd)
+            self.copy_task.addCommand(command)
+        
+        self.job.addChild(self.copy_task)
 
     def create_copy_job(self):
 
         
-        scan_path = self._get_model_data(4)
-        file_ext = self._get_model_data(7)
+        scan_path = self.master_input.scan_path
+        file_ext = self.master_input.ext
         
-        self.copy_task = author.Task(title = "copy files")
+        self.copy_task = author.Task(title = "copy org")
         cmd = ["/bin/mkdir","-p"]
         cmd.append(self.plate_path)
         command = author.Command(argv=cmd)
@@ -175,7 +314,6 @@ class Publish:
             cmd = ["/bin/cp","-fv"]
             cmd.append(os.path.join(scan_path,self.copy_file_list[index]))
             cmd.append(os.path.join(self.plate_path,self.plate_file_name+"."+str(1000+index+1)+"."+file_ext))
-            print cmd
             command = author.Command(argv=cmd)
             self.copy_task.addCommand(command)
         
@@ -238,6 +376,11 @@ class Publish:
         cmd = ['rm','-f',self.nuke_script]
         command = author.Command(argv=cmd)
         self.rm_task.addCommand(command)
+        
+        if self.master_input.retime_job:
+            cmd = ['rm','-f',self.nuke_retime_script]
+            command = author.Command(argv=cmd)
+            self.rm_task.addCommand(command)
 
         cmd = ['rm','-f',self.sg_script]
         command = author.Command(argv=cmd)
@@ -249,12 +392,84 @@ class Publish:
 
         self.job.spool(hostname="10.0.20.81",owner="west")
 
+    def create_nuke_retime_script(self):
 
+        app = sgtk.platform.current_bundle()
+        context = app.context
+        project = context.project
+        shotgun = app.sgtk.shotgun
 
+        output_info = shotgun.find_one("Project",[['id','is',project['id']]],
+                               ['sg_colorspace','sg_mov_codec',
+                               'sg_out_format','sg_fps','sg_mov_colorspace'])
+
+    
+    
+        setting = Output(output_info)
+
+        if not self.master_input.retime_job:
+            return
+        
+        scan_path = os.path.join(self.master_input.scan_path,
+                                 self.master_input.scan_name
+                                 +"."+self.master_input.pad
+                                 +"."+self.master_input.ext
+                                 )
+        org_path = os.path.join(self.plate_path,self.plate_file_name+".%04d."+self.file_ext)
+        tmp_nuke_script_file = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+"_retime.py")
+
+        nk = ''
+        nk += 'import nuke\n'
+        nk += 'nuke.knob("root.first_frame", "{}" )\n'.format(int(self.master_input.start_frame))
+        nk += 'nuke.knob("root.last_frame", "{}" )\n'.format(int(self.master_input.end_frame))
+        for info in self.master_input.retime_info:
+            nk += '\n'
+            nk += '\n'
+            nk += 'read = nuke.nodes.Read( file="{}" )\n'.format( scan_path )
+            nk += 'read["colorspace"].setValue("{}")\n'.format(setting.colorspace)
+            nk += 'read["first"].setValue( {} )\n'.format(int(self.master_input.start_frame))
+            nk += 'read["last"].setValue( {} )\n'.format( int(self.master_input.end_frame))
+            nk += 'read["frame"].setValue( "frame+{}")\n'.format( int(info['just_in']-1))
+            tg = 'read'
+
+            nk += 'retime = nuke.nodes.Retime(inputs = [%s])\n'% tg
+            nk += 'retime["input.first_lock"].setValue( "true" )\n'
+            nk += 'retime["input.last"].setValue({} )\n'.format(int(self.master_input.end_frame))
+            if int (info['retime_percent']) < 0:
+                nk += 'retime["reverse"].setValue( "true" )\n'
+                nk += 'retime["speed"].setValue( {})\n'.format(-float(info['retime_percent'])/100.0)
+            else:
+                nk += 'retime["speed"].setValue( {})\n'.format(float(info['retime_percent'])/100.0)
+            nk += 'retime["filter"].setValue( "none" )\n'
+            nk += 'retime["output.first_lock"].setValue( "true" )\n'
+            tg = 'retime'
+            nk += 'output = "{}"\n'.format( org_path )
+            nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n'% tg
+            nk += 'write["file_type"].setValue( "{}" )\n'.format(self.file_ext)
+            if self.file_ext == "exr":
+                nk += 'write["compression"].setValue("PIZ Wavelet (32 scanlines)")\n'
+            nk += 'write["create_directories"].setValue(True)\n'
+            nk += 'write["colorspace"].setValue("{}")\n'.format(setting.colorspace)
+            nk += 'write["frame"].setValue( "frame+1000+{}")\n'.format( int(info['retime_start_frame']-1))
+            nk += 'nuke.execute(write,1,{},1)\n'.format(int(info['retime_duration']))
+        
+        nk += 'exit()\n'
+
+        if not os.path.exists( os.path.dirname(tmp_nuke_script_file) ):
+            cur_umask = os.umask(0)
+            os.makedirs(os.path.dirname(tmp_nuke_script_file),0777 )
+            os.umask(cur_umask)
+
+        with open( tmp_nuke_script_file, 'w' ) as f:
+            f.write( nk )
+        return tmp_nuke_script_file
 
     def create_nuke_script(self):
         
-        width,height = self._get_model_data(8).split("x")
+        width,height = self.master_input.resolution.split("x")
         app = sgtk.platform.current_bundle()
         context = app.context
         project = context.project
@@ -282,16 +497,20 @@ class Publish:
                                 self.seq_name,
                                 self.shot_name,"plate",
                                 self.plate_file_name+".mov")
-
+        
+        if self.master_input.retime_job:
+            frame_count = sum([x['retime_duration'] for x in self.master_input.retime_info ])
+        else:
+            frame_count = len(self.copy_file_list)
 
         nk = ''
         nk += 'import nuke\n'
-        nk += 'nuke.knob("root.first_frame", "{}" )\n'.format( "1001" )
-        nk += 'nuke.knob("root.last_frame", "{}" )\n'.format("%d"%(1000+len(self.copy_file_list)) )
+        nk += 'nuke.knob("root.first_frame", "{}" )\n'.format(1001)
+        nk += 'nuke.knob("root.last_frame", "{}" )\n'.format(int(1000+frame_count))
         #nk += 'nuke.knob("root.fps", "{}" )\n'.format( framerate )
         nk += 'read = nuke.nodes.Read( name="Read1",file="{}" )\n'.format( read_path )
-        nk += 'read["first"].setValue( {} )\n'.format( "1001" )
-        nk += 'read["last"].setValue( {} )\n'.format( "%d"%(1000+len(self.copy_file_list)) )
+        nk += 'read["first"].setValue( {} )\n'.format( 1001 )
+        nk += 'read["last"].setValue( {} )\n'.format(int(1000+frame_count))
         tg = 'read'
     
         #gizmo = ''
@@ -318,7 +537,7 @@ class Publish:
             nk += 'write["colorspace"].setValue("{}")\n'.format(setting.mov_colorspace)
             nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
             nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
-            nk += 'nuke.execute(write,1001,%d,1)\n'%(1000+len(self.copy_file_list))
+            nk += 'nuke.execute(write,1001,{},1)\n'.format(int(1000+frame_count))
 
         nk += 'output = "{}"\n'.format( jpg_path )
         nk += 'write   = nuke.nodes.Write(name="ww_write", inputs = [%s],file=output )\n'% tg
@@ -328,7 +547,7 @@ class Publish:
         nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
         nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
         #nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
-        nk += 'nuke.execute(write,1001,%d,1)\n'%(1000+len(self.copy_file_list))
+        nk += 'nuke.execute(write,1001,{},1)\n'.format(int(1000+frame_count))
 
         if int(width) > 2048:
             nk += 'reformat = reformat = nuke.nodes.Reformat(inputs=[%s],type=2,scale=.5)\n' %tg
@@ -344,8 +563,8 @@ class Publish:
         nk += 'write["colorspace"].setValue("{}")\n'.format(setting.mov_colorspace)
         #nk += 'write["colorspace"].setValue( "Cineon" )\n'
         #nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
-        nk += 'nuke.execute(write,1001,%d,1)\n'%(1000+len(self.copy_file_list))
-
+        nk += 'nuke.execute(write,1001,{},1)\n'.format(int(1000+frame_count))
+        nk += 'exit()\n'
 
 
         
@@ -399,12 +618,12 @@ class Publish:
         
         file_list = []
 
-        scan_path = self._get_model_data(4)
-        start_index = self._get_model_data(14)
-        end_index = self._get_model_data(15)
-        pad = self._get_model_data(6)
-        file_name  = self._get_model_data(5)
-        file_ext = self._get_model_data(7)
+        scan_path = self.master_input.scan_path
+        start_index = self.master_input.just_in
+        end_index = self.master_input.just_out
+        pad = self.master_input.pad
+        file_name  = self.master_input.scan_name
+        file_ext = self.master_input.ext
         sequence = pyseq.get_sequences(scan_path)
         file_format = sequence[0].format("%h%p%t")
         
@@ -418,7 +637,9 @@ class Publish:
 
 
     
-    def _get_model_data(self,col):
+    def _get_model_data(self,colname):
+        
+        col = MODEL_KEYS[colname]
 
         index = self.model.createIndex(self.row,col)
         return self.model.data(index,QtCore.Qt.DisplayRole )
@@ -440,7 +661,7 @@ class Publish:
     
     @property
     def file_ext(self):
-        return self._get_model_data(7)
+        return self.master_input.ext
 
     @property
     def published_file_type(self):
@@ -456,6 +677,13 @@ class Publish:
         
         temp = os.path.join(self._app.sgtk.project_path,'seq',self.seq_name,
                self.shot_name,"plate",self.seq_type,"v%03d"%self.version)
+        return temp
+
+    @property
+    def tmp_path(self):
+        
+        temp = os.path.join(self._app.sgtk.project_path,'seq',self.seq_name,
+               self.shot_name,"plate","tmp","v%03d"%self.version)
         return temp
 
     @property
@@ -476,6 +704,7 @@ class Publish:
     def plate_file_name(self):
         temp = self.shot_name + "_"+self.seq_type+"_v%03d"%self.version
         return temp
+
     @property
     def version_file_name(self):
         temp = self.shot_name + "_"+self.seq_type
@@ -490,7 +719,7 @@ class Publish:
                                task = None,
                                user = self.user)
 
-        file_ext = self._get_model_data(7)
+        file_ext = self.master_input.ext
 
         if self.seq_type == "org":
             published_type = "Plate"

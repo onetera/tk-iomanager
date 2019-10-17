@@ -9,7 +9,7 @@ import pydpx_meta
 import OpenEXR
 from PIL import Image
 from sgtk.platform.qt import QtCore, QtGui
-
+from .constant import *
 
 def create_excel(path):
     
@@ -21,27 +21,29 @@ def create_excel(path):
 def _create_seq_array(sequences):
         
     array = []
-
     for seq in sequences:
         info = []
-        info.append(QtGui.QCheckBox())
-        info.append("")
-        info.append("")
-        info.append("org")
-        info.append(seq.dirname)
-        info.append(seq.head().split(".")[0])
-        info.append(seq.format("%p"))
-        info.append(seq.tail().split(".")[-1])
-        info.append(_get_resolution(seq))
-        info.append(seq.start())
-        info.append(seq.end())
-        info.append(len(seq.frames()))
-        info.append(_get_time_code(seq,seq.start()))
-        info.append(_get_time_code(seq,seq.end()))
-        info.append(seq.start())
-        info.append(seq.end())
-        info.append(_get_framerate(seq))
-        info.append("")
+        info.insert(MODEL_KEYS['check'], QtGui.QCheckBox())
+        info.insert(MODEL_KEYS['roll'], "")
+        info.insert(MODEL_KEYS['seq_name'],"")
+        info.insert(MODEL_KEYS['shot_name'], "")
+        info.insert(MODEL_KEYS['version'],"")
+        info.insert(MODEL_KEYS['type'], "org")
+        info.insert(MODEL_KEYS['scan_path'], seq.dirname)
+        info.insert(MODEL_KEYS['scan_name'], seq.head().split(".")[0])
+        info.insert(MODEL_KEYS['pad'],seq.format('%p'))
+        info.insert(MODEL_KEYS['ext'],seq.tail().split(".")[-1])
+        info.insert(MODEL_KEYS['resolution'] , _get_resolution(seq))
+        info.insert(MODEL_KEYS['start_frame'], seq.start())
+        info.insert(MODEL_KEYS['end_frame'], seq.end())
+        info.insert(MODEL_KEYS['duraiton'], len(seq.frames()))
+        info.insert(MODEL_KEYS['retime_duration'],None)
+        info.insert(MODEL_KEYS['timecode_in'], _get_time_code(seq,seq.start()))
+        info.insert(MODEL_KEYS['timecode_out'],_get_time_code(seq,seq.end()))
+        info.insert(MODEL_KEYS['just_in'],seq.start())
+        info.insert(MODEL_KEYS['just_out'], seq.end())
+        info.insert(MODEL_KEYS['framerate'] ,_get_framerate(seq))
+        info.insert(MODEL_KEYS['date'] , "")
         array.append(info)
     
     return array
@@ -53,7 +55,7 @@ def _get_time_code(seq,frame):
         exr = OpenEXR.InputFile(exr_file)
         if exr.header().has_key("timeCode"):
             ti = exr.header()['timeCode']
-            return "%d:%d:%d:%d"%(ti.hours,ti.minutes,ti.seconds,ti.frame)
+            return "%02d:%02d:%02d:%02d"%(ti.hours,ti.minutes,ti.seconds,ti.frame)
         return ""
     elif seq.tail() == ".dpx":
         dpx_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%frame+seq.tail())
@@ -73,7 +75,7 @@ def _get_framerate(seq):
     elif seq.tail() == ".dpx":
         dpx_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
         dpx = pydpx_meta.DpxHeader(dpx_file)
-        return int(dpx.raw_header.TvHeader.FrameRate)
+        return dpx.raw_header.TvHeader.FrameRate
     else:
         return ""
 
@@ -163,9 +165,13 @@ class ExcelWriteModel:
         rows = rWorksheet.nrows  
         cols = rWorksheet.ncols
         array = []
-        for row in range(0,rows):
+        for row in range(1,rows):
             info = []
-            info.append(QtGui.QCheckBox())
+            check_data = rWorksheet.cell_value( row, MODEL_KEYS['check'] )
+            check_box = QtGui.QCheckBox()
+            if check_data:
+                check_box.setChecked(True)
+            info.append(check_box)
             for col in range(1,cols):
                 data = rWorksheet.cell_value( row, col )
                 if not data == "NaN":
@@ -174,20 +180,26 @@ class ExcelWriteModel:
                     info.append("")
             array.append(info)
         return array
-
+    
     def write_model_to_excel(self,model):
+        for col in range(0,len(model.header)):
 
-
+            self.wWorksheet.write(0,col,model.header[col])
 
         for row in range(0,model.rowCount(None)):
-            for col in range(0,model.columnCount(None)):
+            index = model.createIndex(row,MODEL_KEYS['check'])
+            check_box = model.data(index,QtCore.Qt.CheckStateRole)
+            if check_box:
+                self.wWorksheet.write( row+1, MODEL_KEYS['check'], "o" )
+
+            for col in range(1,model.columnCount(None)):
                 index = model.createIndex(row,col)
                 data = model.data(index,QtCore.Qt.DisplayRole )
                 try:
                     if data == "" :
-                        self.wWorksheet.write( row, col, "NaN" )
+                        self.wWorksheet.write( row+1, col, "" )
                     else:
-                        self.wWorksheet.write( row, col, data )
+                        self.wWorksheet.write( row+1, col, data )
                 except Exception as e :
                     print e
                     pass
@@ -240,7 +252,7 @@ def get_time_code(dir_name,head,frame_format,frame,tail):
         exr = OpenEXR.InputFile(exr_file)
         if exr.header().has_key("timeCode"):
             ti = exr.header()['timeCode']
-            return "%d:%d:%d:%d"%(ti.hours,ti.minutes,ti.seconds,ti.frame)
+            return "%02d:%02d:%02d:%02d"%(ti.hours,ti.minutes,ti.seconds,ti.frame)
         return ""
     elif tail == "dpx":
         dpx_file = os.path.join(dir_name,head+"."+frame_format%frame+"."+tail)

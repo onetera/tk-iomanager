@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialog.ui'
 #
-# Created: Tue Jul  9 18:28:09 2019
+# Created: Tue Oct 15 18:18:14 2019
 #      by: pyside-uic 0.2.15 running on PySide 1.2.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -46,6 +46,14 @@ class Ui_Dialog(object):
         self.verticalLayout.addWidget(self.seq_model_view)
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
+        self.excel_file_label = QtGui.QLabel(Dialog)
+        self.excel_file_label.setMinimumSize(QtCore.QSize(200, 0))
+        self.excel_file_label.setText("")
+        self.excel_file_label.setObjectName("excel_file_label")
+        self.horizontalLayout.addWidget(self.excel_file_label)
+        self.edit_excel = QtGui.QPushButton(Dialog)
+        self.edit_excel.setObjectName("edit_excel")
+        self.horizontalLayout.addWidget(self.edit_excel)
         spacerItem1 = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem1)
         self.validate_excel = QtGui.QPushButton(Dialog)
@@ -69,6 +77,7 @@ class Ui_Dialog(object):
         self.create_excel.setText(QtGui.QApplication.translate("Dialog", "Load", None, QtGui.QApplication.UnicodeUTF8))
         self.check_all_btn.setText(QtGui.QApplication.translate("Dialog", "Check All", None, QtGui.QApplication.UnicodeUTF8))
         self.uncheck_all_btn.setText(QtGui.QApplication.translate("Dialog", "Uncheck All", None, QtGui.QApplication.UnicodeUTF8))
+        self.edit_excel.setText(QtGui.QApplication.translate("Dialog", "Edit", None, QtGui.QApplication.UnicodeUTF8))
         self.validate_excel.setText(QtGui.QApplication.translate("Dialog", "Validate", None, QtGui.QApplication.UnicodeUTF8))
         self.save_excel.setText(QtGui.QApplication.translate("Dialog", "Save", None, QtGui.QApplication.UnicodeUTF8))
         self.publish.setText(QtGui.QApplication.translate("Dialog", "Publish", None, QtGui.QApplication.UnicodeUTF8))

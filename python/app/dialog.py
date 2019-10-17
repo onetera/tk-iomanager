@@ -12,6 +12,7 @@ import sgtk
 import os
 import sys
 import threading
+import subprocess
 
 # by importing QT from sgtk rather than directly, we ensure that
 # the code will be compatible with both PySide and PyQt.
@@ -20,6 +21,9 @@ from .ui.dialog import Ui_Dialog
 from .model.seq_item_model import *
 from .api import excel
 from .api import publish
+from .api import validate
+from .api.constant import *
+
 
 def show_dialog(app_instance):
     """
@@ -60,7 +64,25 @@ class AppDialog(QtGui.QWidget):
         self.ui.publish.clicked.connect(self._publish)
         self.ui.check_all_btn.clicked.connect(self._check_all)
         self.ui.uncheck_all_btn.clicked.connect(self._uncheck_all)
+        self.ui.edit_excel.clicked.connect(self._open_excel)
+        self.ui.validate_excel.clicked.connect(self._validate)
+        self.ui.edit_excel.setEnabled(False)
+    
 
+
+    def _validate(self):
+        
+        model = self.ui.seq_model_view.model()
+        v  = validate.Validate(model)
+
+        v.timecode()
+        #self._save_excel()
+
+    def _open_excel(self):
+        excel_file = self.ui.excel_file_label.text()
+        command = ['libreoffice5.4','--calc','--nologo']
+        command.append(excel_file)
+        subprocess.Popen(command)
     
     def _check_all(self):
         
@@ -80,39 +102,55 @@ class AppDialog(QtGui.QWidget):
            
 
     def _set_timecode(self,index):
+        
 
         row = index.row()
         column = index.column()
-        if not column in [14,15] :
-            return 
+        if column  == MODEL_KEYS['just_in']:
+            timecode_col = MODEL_KEYS['timecode_in']
+        
+        elif column  == MODEL_KEYS['just_out']:
+            timecode_col = MODEL_KEYS['timecode_out']
+        else:
+            return
+
 
         model = self.ui.seq_model_view.model()
 
         frame = int(model.data(index,QtCore.Qt.DisplayRole ))
 
-        index = model.createIndex(row,4)
+        index = model.createIndex(row,MODEL_KEYS["scan_path"])
         dir_name = model.data(index,QtCore.Qt.DisplayRole )
 
-        index = model.createIndex(row,5)
+        index = model.createIndex(row,MODEL_KEYS['scan_name'])
         head = model.data(index,QtCore.Qt.DisplayRole )
 
-        index = model.createIndex(row,6)
+        index = model.createIndex(row,MODEL_KEYS['pad'])
         frame_format = model.data(index,QtCore.Qt.DisplayRole )
 
-        index = model.createIndex(row,7)
+        index = model.createIndex(row,MODEL_KEYS['ext'])
         tail = model.data(index,QtCore.Qt.DisplayRole )
 
         time_code = excel.get_time_code(dir_name,head,frame_format,frame,tail)
         
-        index = model.createIndex(row,column - 2)
+
+        index = model.createIndex(row,timecode_col)
         model.setData(index,time_code,3)
+
+    def _set_index_by_timecode(self,index):
+        
+        row = index.row()
+        column = index.column()
+        if not column in [16,17] :
+            return 
+        
 
 
     def _set_path(self):
         """
         Plate Path Select
         """
-        file_dialog = ileName = QtGui.QFileDialog().getExistingDirectory(None, 
+        file_dialog = QtGui.QFileDialog().getExistingDirectory(None, 
         'Output directory', 
         os.path.join(self._app.sgtk.project_path,'product','scan'))
         
@@ -124,8 +162,11 @@ class AppDialog(QtGui.QWidget):
         excel_file = excel.ExcelWriteModel.get_last_excel_file(path)
         if excel_file:
             model = SeqTableModel(excel.ExcelWriteModel.read_excel(excel_file))
+            self.ui.excel_file_label.setText(excel_file)
+            self.ui.edit_excel.setEnabled(True)
         else:
             model = SeqTableModel(excel.create_excel(path))
+            self.ui.excel_file_label.setText("No Saved Status")
 
         self.ui.seq_model_view.setModel(model)
         model.dataChanged.connect(self._set_timecode)
@@ -135,12 +176,57 @@ class AppDialog(QtGui.QWidget):
         path = self.ui.lineEdit.text()
         excel_writer = excel.ExcelWriteModel(path)
         excel_writer.write_model_to_excel(self.ui.seq_model_view.model())
+        self.ui.excel_file_label.setText(excel.ExcelWriteModel.get_last_excel_file(path))
+        self.ui.edit_excel.setEnabled(True)
     
     def _publish(self):
         model = self.ui.seq_model_view.model()
+        group_model = OrderedDict()
         for row in range(0,model.rowCount(None)):
 
             index = model.createIndex(row,0)
             check = model.data(index,QtCore.Qt.CheckStateRole )
             if check == QtCore.Qt.CheckState.Checked:
-                publish.Publish(model,row)
+                shot_name_index = model.createIndex(row,MODEL_KEYS['shot_name'])
+                shot_name = model.data(shot_name_index,QtCore.Qt.DisplayRole)
+                if shot_name:
+                    if group_model.has_key(shot_name):
+                        group_model[shot_name].append(row)
+                    else:
+                        group_model[shot_name] = []
+                        group_model[shot_name].append(row)
+
+                
+                # seq_source
+                else:
+                    pass
+                
+        
+        print group_model
+        for value in group_model.values():
+            print value
+            master_input = publish.MasterInput(model,value,'shot_name')
+            publish.Publish(master_input)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

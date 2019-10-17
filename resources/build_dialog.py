@@ -36,4 +36,4 @@ if __name__ == "__main__":
 
     build_ui('dialog')
     # build_ui('asset_window')
-    build_res('resources')
+    #build_res('resources')
