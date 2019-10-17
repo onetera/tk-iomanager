@@ -37,7 +37,8 @@ def _create_seq_array(sequences):
         info.insert(MODEL_KEYS['start_frame'], seq.start())
         info.insert(MODEL_KEYS['end_frame'], seq.end())
         info.insert(MODEL_KEYS['duraiton'], len(seq.frames()))
-        info.insert(MODEL_KEYS['retime_duration'],None)
+        info.insert(MODEL_KEYS['retime_percent'],None)
+        info.insert(MODEL_KEYS["retime_start_frame"]) = 1
         info.insert(MODEL_KEYS['timecode_in'], _get_time_code(seq,seq.start()))
         info.insert(MODEL_KEYS['timecode_out'],_get_time_code(seq,seq.end()))
         info.insert(MODEL_KEYS['just_in'],seq.start())
