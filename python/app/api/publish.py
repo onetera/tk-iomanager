@@ -70,7 +70,7 @@ class MasterInput(object):
         self.resolution = self._get_data(MODEL_KEYS['resolution'])
         self.start_frame = self._get_data(MODEL_KEYS['start_frame'])
         self.end_frame = self._get_data(MODEL_KEYS['end_frame'])
-        self.framerate = self._get_data(MODEL_KEYS['framerate'])
+        self.framerate = float(self._get_data(MODEL_KEYS['framerate']))
         self.type = self._get_data(MODEL_KEYS['type'])
     
     @property
@@ -564,6 +564,7 @@ class Publish:
         nk += 'write["create_directories"].setValue(True)\n'
         nk += 'write["mov64_codec"].setValue( "apcn")\n'
         nk += 'write["colorspace"].setValue("{}")\n'.format(setting.mov_colorspace)
+        nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
         #nk += 'write["colorspace"].setValue( "Cineon" )\n'
         #nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
         nk += 'nuke.execute(write,1001,{},1)\n'.format(int(1000+frame_count))
