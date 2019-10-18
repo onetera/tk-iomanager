@@ -72,7 +72,7 @@ def _get_framerate(seq):
         exr = OpenEXR.InputFile(exr_file)
         if exr.header().has_key("framesPerSecond"):
             fr = exr.header()['framesPerSecond']
-            return  fr.n 
+            return  float(fr.n)/float(fr.d) 
         return ""
     elif seq.tail() == ".dpx":
         dpx_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
