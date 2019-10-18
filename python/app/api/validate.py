@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sgtk
 from sgtk.platform.qt import QtCore, QtGui
 from timecode import Timecode
 import pyseq
@@ -15,7 +16,9 @@ class Validate(object):
     def __init__(self,model,parent=None):
         
         self.model = model
-        
+        self._app = sgtk.platform.current_bundle()
+        self._sg = self._app.shotgun
+        self.project = self._app.context.project
 
         pass
     
@@ -57,7 +60,52 @@ class Validate(object):
 
     def seq_name(self):
         pass
+    
+    def uploade_status(self):
+        rows = self.model.rowCount(None)
+        for row in range(0,rows):
+            version,date = self._get_version(row)
+            print date
+            self._set_data(row,MODEL_KEYS['version'],version)
+            self._set_data(row,MODEL_KEYS['date'],str(date))
+    
+    
 
+    def _get_version(self,row):
+        
+        file_type = self._get_data(row,MODEL_KEYS['type'])
+        file_type_ent = self.published_file_type(file_type)
+        shot_name = self._get_data(row,MODEL_KEYS['shot_name'])
+        version_name = shot_name + "_" + file_type
+        key = [
+                ['project','is',self.project],
+                ['code','is',shot_name]
+                ]
+
+        shot_ent = self._sg.find_one('Shot',key)
+
+        key = [
+                ['project','is',self.project],
+                ['entity','is',shot_ent],
+                ["published_file_type","is",file_type_ent],
+                ['name','is',version_name]
+               ]
+        published_ents = self._sg.find("PublishedFile",key,['version_number','created_at'])
+        if not published_ents:
+            return "not uploaded",""
+        else:
+            return published_ents[-1]['version_number'],published_ents[-1]['created_at']
+
+
+    def published_file_type(self,file_type):
+
+        if file_type== "org":
+            key  = [['code','is','Plate']]
+            return self._sg.find_one("PublishedFileType",key,['id'])
+        else:
+            key  = [['code','is','Source']]
+            return self._sg.find_one("PublishedFileType",key,['id'])
+            
 
     def _get_data(self,row,col):
 

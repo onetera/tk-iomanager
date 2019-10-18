@@ -64,6 +64,7 @@ class MasterInput(object):
         self.entity_name = self._get_data(MODEL_KEYS[self.entity_type])
         self.scan_path = self._get_data(MODEL_KEYS['scan_path'])
         self.scan_name = self._get_data(MODEL_KEYS['scan_name'])
+        self.version = int(self._get_data(MODEL_KEYS['version']))
         self.pad = self._get_data(MODEL_KEYS['pad'])
         self.ext = self._get_data(MODEL_KEYS['ext'])
         self.resolution = self._get_data(MODEL_KEYS['resolution'])
@@ -137,9 +138,9 @@ class MasterInput(object):
                 info = {}
                 info['just_in'] = self._get_data(MODEL_KEYS['just_in'],row)
                 info['just_out'] = self._get_data(MODEL_KEYS['just_out'],row)
-                info['retime_start_frame'] = self._get_data(MODEL_KEYS['retime_start_frame'],row)
-                info['retime_duration'] = self._get_data(MODEL_KEYS['retime_duration'],row)
-                info['retime_percent'] = self._get_data(MODEL_KEYS['retime_percent'],row)
+                info['retime_start_frame'] = int(self._get_data(MODEL_KEYS['retime_start_frame'],row))
+                info['retime_duration'] = int(self._get_data(MODEL_KEYS['retime_duration'],row))
+                info['retime_percent'] = int(self._get_data(MODEL_KEYS['retime_percent'],row))
                 self.retime_info.append(info)
     
         
@@ -162,10 +163,11 @@ class Publish:
         self.shot_name = self.master_input.entity_name
         self.seq_type = self.master_input.type
         self.user = self._app.context.user
+        self.version = self.master_input.version
 
         self.create_seq()
         self.create_shot()
-        self._get_version()
+        #self._get_version()
         self.create_version()
         if self.seq_type == "org":
             self.update_shot_info()
@@ -426,6 +428,7 @@ class Publish:
         nk += 'nuke.knob("root.first_frame", "{}" )\n'.format(int(self.master_input.start_frame))
         nk += 'nuke.knob("root.last_frame", "{}" )\n'.format(int(self.master_input.end_frame))
         for info in self.master_input.retime_info:
+            print info['retime_start_frame']
             nk += '\n'
             nk += '\n'
             nk += 'read = nuke.nodes.Read( file="{}" )\n'.format( scan_path )
@@ -656,7 +659,7 @@ class Publish:
         if not published_ents:
             self.version = 1
         else:
-            self.version = published_ents[-1]['version_number'] + 1
+            self.version = published_ents[-1]['version_number']
             
     
     @property
@@ -710,6 +713,19 @@ class Publish:
         temp = self.shot_name + "_"+self.seq_type
         return temp
     
+    def _check_version(self):
+        key = [
+                ['project','is',self.project],
+                ['entity','is',self.shot_ent],
+                ["published_file_type","is",self.published_file_type],
+                ['name','is',self.version_file_name],
+                ['version_number','is',int(self.version)]
+               ]
+        published_ents = self._sg.find("PublishedFile",key,['version_number'])
+        if published_ents:
+            return True
+        else:
+            return False
 
     def publish_to_shotgun(self):
         
@@ -720,6 +736,10 @@ class Publish:
                                user = self.user)
 
         file_ext = self.master_input.ext
+        
+
+        if self._check_version():
+            return
 
         if self.seq_type == "org":
             published_type = "Plate"

@@ -76,6 +76,7 @@ class AppDialog(QtGui.QWidget):
         v  = validate.Validate(model)
 
         v.timecode()
+        v.uploade_status()
         #self._save_excel()
 
     def _open_excel(self):
