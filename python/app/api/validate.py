@@ -92,9 +92,9 @@ class Validate(object):
                ]
         published_ents = self._sg.find("PublishedFile",key,['version_number','created_at'])
         if not published_ents:
-            return "not uploaded",""
+            return 1,""
         else:
-            return published_ents[-1]['version_number'],published_ents[-1]['created_at']
+            return published_ents[-1]['version_number']+1 ,published_ents[-1]['created_at']
 
 
     def published_file_type(self,file_type):
