@@ -69,7 +69,29 @@ class Validate(object):
             self._set_data(row,MODEL_KEYS['version'],version)
             self._set_data(row,MODEL_KEYS['date'],str(date))
     
-    
+    def check_src_version(self):
+        
+        group_model = {}
+
+        for row in range(0,self.model.rowCount(None)):
+            type_value = self._get_data(row,MODEL_KEYS['type'])
+            if type_value == "src":
+                shot_name = self._get_data(row,MODEL_KEYS['shot_name'])
+            if group_model.has_key(shot_name):
+                group_model[shot_name].append(row)
+            else:
+                group_model[shot_name] = []
+                group_model[shot_name].append(row)
+        
+        for value in group_model.values():
+            print value
+            add_value = 0
+            for row in value:
+                version = self._get_data(row,MODEL_KEYS['version'])
+                self._set_data(row,MODEL_KEYS['version'],int(version)+add_value)
+                add_value += 1
+
+
 
     def _get_version(self,row):
         

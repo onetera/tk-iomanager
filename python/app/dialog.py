@@ -77,6 +77,7 @@ class AppDialog(QtGui.QWidget):
 
         v.timecode()
         v.uploade_status()
+        v.check_src_version()
         #self._save_excel()
 
     def _open_excel(self):
@@ -188,14 +189,17 @@ class AppDialog(QtGui.QWidget):
             index = model.createIndex(row,0)
             check = model.data(index,QtCore.Qt.CheckStateRole )
             if check == QtCore.Qt.CheckState.Checked:
+                scan_name_index = model.createIndex(row,MODEL_KEYS['scan_name'])
+                scan_name = model.data(scan_name_index,QtCore.Qt.DisplayRole)
                 shot_name_index = model.createIndex(row,MODEL_KEYS['shot_name'])
                 shot_name = model.data(shot_name_index,QtCore.Qt.DisplayRole)
+                dict_name = shot_name+"_"+scan_name
                 if shot_name:
-                    if group_model.has_key(shot_name):
-                        group_model[shot_name].append(row)
+                    if group_model.has_key(dict_name):
+                        group_model[dict_name].append(row)
                     else:
-                        group_model[shot_name] = []
-                        group_model[shot_name].append(row)
+                        group_model[dict_name] = []
+                        group_model[dict_name].append(row)
 
                 
                 # seq_source

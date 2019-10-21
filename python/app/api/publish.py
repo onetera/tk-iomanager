@@ -175,6 +175,7 @@ class Publish:
         self.nuke_retime_script = self.create_nuke_retime_script()
         self.nuke_script = self.create_nuke_script()
         self.sg_script = self.create_sg_script()
+        #self.copy_script = self._create_copy_script()
 
         self.create_job()
         self.create_temp_job()
@@ -299,10 +300,43 @@ class Publish:
             self.copy_task.addCommand(command)
         
         self.job.addChild(self.copy_task)
+    
 
-    def create_copy_job(self):
+    def _create_copy_script(self):
+        scan_path = self.master_input.scan_path
+        file_ext = self.master_input.ext
+        
+        tmp_copy_script_file = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+"_copy.sh")
 
         
+        cp = "#!/bin/bash\n"
+        cp += "mkdir -p {}".format(self.plate_path)
+        for index in range(0,len(self.copy_file_list)):
+            cp += "/bin/cp -fv {0} {1}".format(os.path.join(scan_path,
+                                                       self.copy_file_list[index]),
+                                          os.path.join(self.plate_path,
+                                                       self.plate_file_name+"."
+                                                       +str(1000+index+1)+"."
+                                                       +file_ext))
+            print index
+        with open( tmp_copy_script_file, 'w' ) as f:
+            f.write( cp )
+        
+        return tmp_copy_script_file
+
+    def create_copy_job(self):
+        
+
+
+        #self.copy_task = author.Task(title = "copy org")
+        #cmd = ["/bin/sh",self.copy_script]
+        #command = author.Command(argv=cmd)
+        #self.copy_task.addCommand(command)
+        #self.jpg_task.addChild(self.copy_task)
+
         scan_path = self.master_input.scan_path
         file_ext = self.master_input.ext
         
@@ -387,6 +421,10 @@ class Publish:
         cmd = ['rm','-f',self.sg_script]
         command = author.Command(argv=cmd)
         self.rm_task.addCommand(command)
+
+        #cmd = ['rm','-f',self.copy_script]
+        #command = author.Command(argv=cmd)
+        #self.rm_task.addCommand(command)
         
         self.job.addChild(self.rm_task)
     
