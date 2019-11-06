@@ -32,7 +32,7 @@ def _create_seq_array(sequences):
         info.insert(MODEL_KEYS['scan_path'], seq.dirname)
         info.insert(MODEL_KEYS['scan_name'], seq.head().split(".")[0])
         info.insert(MODEL_KEYS['pad'],seq.format('%p'))
-        info.insert(MODEL_KEYS['ext'],seq.tail().split(".")[-1])
+        info.insert(MODEL_KEYS['ext'],_get_ext(seq))
         info.insert(MODEL_KEYS['resolution'] , _get_resolution(seq))
         info.insert(MODEL_KEYS['start_frame'], seq.start())
         info.insert(MODEL_KEYS['end_frame'], seq.end())
@@ -51,6 +51,11 @@ def _create_seq_array(sequences):
     return array
 
 
+def _get_ext(seq):
+    if not seq.tail():
+        return seq.head().split(".")[-1]
+    return seq.tail().split(".")[-1]
+
 def _get_time_code(seq,frame):
     if seq.tail() == ".exr":
         exr_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%frame+seq.tail())
@@ -63,6 +68,19 @@ def _get_time_code(seq,frame):
         dpx_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%frame+seq.tail())
         dpx = pydpx_meta.DpxHeader(dpx_file)
         return dpx.tv_header.time_code
+    elif seq.tail() == "":
+        tail = seq.head().split(".")[-1]
+        if tail == "dpx":
+            dpx_file = os.path.join(seq.dirname,seq.head())
+            dpx = pydpx_meta.DpxHeader(dpx_file)
+            return dpx.tv_header.time_code
+        elif tail == "exr":
+            exr_file = os.path.join(seq.dirname,seq.head())
+            exr = OpenEXR.InputFile(exr_file)
+            if exr.header().has_key("timeCode"):
+                ti = exr.header()['timeCode']
+                return "%02d:%02d:%02d:%02d"%(ti.hours,ti.minutes,ti.seconds,ti.frame)
+            return ""
     else:
         return ""
 
@@ -78,6 +96,19 @@ def _get_framerate(seq):
         dpx_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
         dpx = pydpx_meta.DpxHeader(dpx_file)
         return dpx.raw_header.TvHeader.FrameRate
+    elif seq.tail() == "":
+        tail = seq.head().split(".")[-1]
+        if tail == "dpx":
+            dpx_file = os.path.join(seq.dirname,seq.head())
+            dpx = pydpx_meta.DpxHeader(dpx_file)
+            return dpx.raw_header.TvHeader.FrameRate
+        elif tail == "exr":
+            exr_file = os.path.join(seq.dirname,seq.head())
+            exr = OpenEXR.InputFile(exr_file)
+            if exr.header().has_key("framesPerSecond"):
+                fr = exr.header()['framesPerSecond']
+                return  float(fr.n)/float(fr.d) 
+            return ""
     else:
         return ""
 
@@ -100,6 +131,20 @@ def _get_resolution(seq):
         jpg_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
         jpeg = Image.open(jpg_file)
         return '%d x %d'%(jpeg.size[0],jpeg.size[1])
+    elif seq.tail() == "":
+        tail = seq.head().split(".")[-1]
+        if tail == "dpx":
+            dpx_file = os.path.join(seq.dirname,seq.head())
+            dpx = pydpx_meta.DpxHeader(dpx_file)
+            return '%d x %d'%(dpx.raw_header.OrientHeader.XOriginalSize,
+                            dpx.raw_header.OrientHeader.YOriginalSize)
+        elif tail == "exr":
+            exr_file = os.path.join(seq.dirname,seq.head())
+            exr = OpenEXR.InputFile(exr_file)
+            if exr.header().has_key("dataWindow"):
+                res = exr.header()['dataWindow']
+                return "%d x %d"%(res.max.x+1,res.max.y+1)
+            return ""
     else:
         return ""
 

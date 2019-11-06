@@ -669,6 +669,9 @@ class Publish:
         file_name  = self.master_input.scan_name
         file_ext = self.master_input.ext
         sequence = pyseq.get_sequences(scan_path)
+        if sequence[0].length() == 1 :
+            file_list.append(sequence[0].head())
+            return file_list
         file_format = sequence[0].format("%h%p%t")
         
         for i in range(int(start_index),int(end_index)+1):

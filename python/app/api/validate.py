@@ -75,7 +75,7 @@ class Validate(object):
 
         for row in range(0,self.model.rowCount(None)):
             type_value = self._get_data(row,MODEL_KEYS['type'])
-            if type_value == "src":
+            if not type_value.find("src") ==  -1:
                 shot_name = self._get_data(row,MODEL_KEYS['shot_name'])
             if group_model.has_key(shot_name):
                 group_model[shot_name].append(row)
