@@ -44,10 +44,13 @@ class Output(object):
             self.colorspace = "ACES - %s"%text
             self.mov_colorspace = info['sg_mov_colorspace']
         else:
+            if not info['sg_mov_colorspace'] :
             #nuke.root()['colorManagement'].setValue("Nuke")
-            self.colorspace = text
-            self.mov_colorspace = text
-
+                self.colorspace = text
+                self.mov_colorspace = text
+            else:
+                self.colorspace = text
+                self.mov_colorspace = info['sg_mov_colorspace']
 
 class MasterInput(object):
 
@@ -602,7 +605,7 @@ class Publish:
             nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n'% tg
         nk += 'write["file_type"].setValue( "mov" )\n'
         nk += 'write["create_directories"].setValue(True)\n'
-        nk += 'write["mov64_codec"].setValue( "apcn")\n'
+        nk += 'write["mov64_codec"].setValue( "{}")\n'.format(setting.mov_codec)
         nk += 'write["colorspace"].setValue("{}")\n'.format(setting.mov_colorspace)
         nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
         #nk += 'write["colorspace"].setValue( "Cineon" )\n'
