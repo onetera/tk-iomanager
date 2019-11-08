@@ -190,7 +190,7 @@ class AppDialog(QtGui.QWidget):
             check = model.data(index,QtCore.Qt.CheckStateRole )
             if check == QtCore.Qt.CheckState.Checked:
                 scan_version_index = model.createIndex(row,MODEL_KEYS['version'])
-                scan_version = model.data(scan_version_index,QtCore.Qt.DisplayRole)
+                scan_version = str(model.data(scan_version_index,QtCore.Qt.DisplayRole))
                 scan_type_index = model.createIndex(row,MODEL_KEYS['type'])
                 scan_type = model.data(scan_type_index,QtCore.Qt.DisplayRole)
                 scan_name_index = model.createIndex(row,MODEL_KEYS['scan_name'])
