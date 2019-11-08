@@ -30,4 +30,11 @@ MODEL_KEYS["framerate"] = 21
 MODEL_KEYS["date"] = 22
 
 
+COLORSPACE=[
+    "ACES - ACES2065-1",
+    "ACES - ACEScg",
+    "rec709",
+    "Gamma2.4",
+    "Cineon"
 
+]

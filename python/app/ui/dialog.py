@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialog.ui'
 #
-# Created: Tue Oct 15 18:18:14 2019
+# Created: Fri Nov  8 12:39:00 2019
 #      by: pyside-uic 0.2.15 running on PySide 1.2.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -40,6 +40,12 @@ class Ui_Dialog(object):
         self.horizontalLayout_3.addWidget(self.uncheck_all_btn)
         spacerItem = QtGui.QSpacerItem(40, 20, QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Minimum)
         self.horizontalLayout_3.addItem(spacerItem)
+        self.label_2 = QtGui.QLabel(Dialog)
+        self.label_2.setObjectName("label_2")
+        self.horizontalLayout_3.addWidget(self.label_2)
+        self.colorspace_combo = QtGui.QComboBox(Dialog)
+        self.colorspace_combo.setObjectName("colorspace_combo")
+        self.horizontalLayout_3.addWidget(self.colorspace_combo)
         self.verticalLayout.addLayout(self.horizontalLayout_3)
         self.seq_model_view = QtGui.QTableView(Dialog)
         self.seq_model_view.setObjectName("seq_model_view")
@@ -47,7 +53,7 @@ class Ui_Dialog(object):
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.excel_file_label = QtGui.QLabel(Dialog)
-        self.excel_file_label.setMinimumSize(QtCore.QSize(200, 0))
+        self.excel_file_label.setMinimumSize(QtCore.QSize(400, 0))
         self.excel_file_label.setText("")
         self.excel_file_label.setObjectName("excel_file_label")
         self.horizontalLayout.addWidget(self.excel_file_label)
@@ -77,6 +83,7 @@ class Ui_Dialog(object):
         self.create_excel.setText(QtGui.QApplication.translate("Dialog", "Load", None, QtGui.QApplication.UnicodeUTF8))
         self.check_all_btn.setText(QtGui.QApplication.translate("Dialog", "Check All", None, QtGui.QApplication.UnicodeUTF8))
         self.uncheck_all_btn.setText(QtGui.QApplication.translate("Dialog", "Uncheck All", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_2.setText(QtGui.QApplication.translate("Dialog", "Colorspace", None, QtGui.QApplication.UnicodeUTF8))
         self.edit_excel.setText(QtGui.QApplication.translate("Dialog", "Edit", None, QtGui.QApplication.UnicodeUTF8))
         self.validate_excel.setText(QtGui.QApplication.translate("Dialog", "Validate", None, QtGui.QApplication.UnicodeUTF8))
         self.save_excel.setText(QtGui.QApplication.translate("Dialog", "Save", None, QtGui.QApplication.UnicodeUTF8))

@@ -25,6 +25,9 @@ from .api import validate
 from .api.constant import *
 
 
+
+
+
 def show_dialog(app_instance):
     """
     Shows the main dialog window.
@@ -56,7 +59,8 @@ class AppDialog(QtGui.QWidget):
         self._app = sgtk.platform.current_bundle()
 
 
-
+        self.ui.colorspace_combo.addItems(COLORSPACE)
+        self._set_colorspace()
         self.ui.select_dir.clicked.connect(self._set_path)
         self.ui.create_excel.clicked.connect(self._create_excel)
         self.ui.save_excel.clicked.connect(self._save_excel)
@@ -68,7 +72,22 @@ class AppDialog(QtGui.QWidget):
         self.ui.validate_excel.clicked.connect(self._validate)
         self.ui.edit_excel.setEnabled(False)
     
+    
+    def _set_colorspace(self):
+        context = self._app.context
+        project = context.project
+        shotgun = self._app.sgtk.shotgun
 
+        output_info = shotgun.find_one("Project",[['id','is',project['id']]],
+                               ['sg_colorspace','sg_mov_codec',
+                               'sg_out_format','sg_fps','sg_mov_colorspace'])
+        colorspace = output_info['sg_colorspace']
+        if not colorspace.find("ACES") == -1:
+            colorspace = "ACES - "+colorspace
+        
+        print colorspace
+        self.ui.colorspace_combo.setCurrentIndex(
+            self.ui.colorspace_combo.findText(colorspace))
 
     def _validate(self):
         
@@ -183,6 +202,7 @@ class AppDialog(QtGui.QWidget):
     
     def _publish(self):
         model = self.ui.seq_model_view.model()
+        colorspace = str(self.ui.colorspace_combo.currentText())
         group_model = OrderedDict()
         for row in range(0,model.rowCount(None)):
 
@@ -215,7 +235,8 @@ class AppDialog(QtGui.QWidget):
         for value in group_model.values():
             print value
             master_input = publish.MasterInput(model,value,'shot_name')
-            publish.Publish(master_input)
+            
+            publish.Publish(master_input,colorspace)
 
 
 

@@ -39,13 +39,10 @@ class Output(object):
     def _set_colorspace(self,text,info):
         
         if not text.find("ACES") == -1 :
-            #nuke.root()['colorManagement'].setValue("OCIO")
-            #nuke.root()['OCIO_config'].setValue("aces_1.0.1")
             self.colorspace = "ACES - %s"%text
             self.mov_colorspace = info['sg_mov_colorspace']
         else:
             if not info['sg_mov_colorspace'] :
-            #nuke.root()['colorManagement'].setValue("Nuke")
                 self.colorspace = text
                 self.mov_colorspace = text
             else:
@@ -156,9 +153,10 @@ class MasterInput(object):
 
 class Publish:
     
-    def __init__(self,master_input,parent=None):
+    def __init__(self,master_input,scan_colorspace,parent=None):
         
         self.master_input = master_input
+        self.scan_colorspace = scan_colorspace
 
         self._app = sgtk.platform.current_bundle()
         self._sg = self._app.shotgun
@@ -174,6 +172,7 @@ class Publish:
         self.create_version()
         if self.seq_type == "org":
             self.update_shot_info()
+        self.publish_to_shotgun()
 
         self.nuke_retime_script = self.create_nuke_retime_script()
         self.nuke_script = self.create_nuke_script()
@@ -184,11 +183,11 @@ class Publish:
         self.create_temp_job()
         self.create_rm_job()
         self.create_sg_job()
+        self.convert_mp4_job()
         self.create_jpg_job()
         self.create_org_job()
         self.submit_job()
 
-        self.publish_to_shotgun()
 
         
     @property
@@ -273,7 +272,7 @@ class Publish:
         if self.master_input.retime_job:
             self.org_task = author.Task(title = "create org")
             cmd = ['rez-env','nuke','--','nuke','-ix',self.nuke_retime_script]
-            if not self.colorspace.find("ACES") == -1: 
+            if not self.scan_colorspace.find("ACES") == -1: 
                 cmd = ['rez-env','nuke','ocio_config','--','nuke','-ix',self.nuke_retime_script]
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
@@ -377,9 +376,6 @@ class Publish:
                 ['entity','is',self.shot_ent],
                 ['code','is',mov_name]
                 ]
-        if self._sg.find_one("Version",key):
-            self.version_ent = self._sg.find_one("Version",key)
-            return
         desc = {
                 "project" : self.project,
                 "code" : mov_name,
@@ -388,18 +384,137 @@ class Publish:
                 "sg_path_to_movie" : mov_path,
                 "sg_path_to_frames" : read_path,
                 "sg_version_type" : version_type,
+                "sg_scan_colorspace" : self.scan_colorspace
                 }
+
+        if self._sg.find_one("Version",key):
+            self.version_ent = self._sg.find_one("Version",key)
+            self._sg.update("Version",self.version_ent['id'],desc)
+            return
+
         self.version_ent = self._sg.create("Version",desc)
+
+        return
     
     def create_jpg_job(self):
 
         self.jpg_task = author.Task(title = "render jpg")
         cmd = ['rez-env','nuke','--','nuke','-ix',self.nuke_script]
-        if not self.colorspace.find("ACES") == -1: 
+        if not self.scan_colorspace.find("ACES") == -1: 
             cmd = ['rez-env','nuke','ocio_config','--','nuke','-ix',self.nuke_script]
         command = author.Command(argv=cmd)
         self.jpg_task.addCommand(command)
-        self.sg_task.addChild(self.jpg_task)
+        self.mp4_task.addChild(self.jpg_task)
+
+    def convert_mp4_job(self):
+
+        self.mp4_task = author.Task(title = "render mp4")
+        mov_path = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+".mov")
+
+        mp4_path = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+".mp4")
+
+        webm_path = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+".webm")
+
+        command = ['rez-env','ffmpeg','--','ffmpeg','-y']
+        command.append("-i")
+        command.append(mov_path)
+        command.append("-vcodec")
+        command.append("libx264")
+        #command.append("-r")
+        #command.append("24")
+        command.append("-pix_fmt")
+        command.append("yuv420p")
+        #command.append("-preset")
+        #command.append("veryslow")
+        command.append("-crf")
+        command.append("18")
+        command.append("-vf")
+        command.append("pad='ceil(iw/2)*2:ceil(ih/2)*2'")
+        command.append(mp4_path)
+        command = author.Command(argv=command)
+        self.mp4_task.addCommand(command)
+
+        command = ['rez-env','ffmpeg','--','ffmpeg','-y']
+        command.append("-i")
+        command.append(mov_path)
+        command.append("-vcodec")
+        command.append("libvpx")
+        command.append("-pix_fmt")
+        command.append("yuv420p")
+        command.append("-g")
+        command.append("30")
+        command.append("-b:v")
+        command.append("2000k")
+        command.append("-quality")
+        command.append("realtime")
+        command.append("-cpu-used")
+        command.append("0")
+        command.append("-qmin")
+        command.append("10")
+        command.append("-qmax")
+        command.append("42")
+        command.append("-vf")
+        command.append("pad='ceil(iw/2)*2:ceil(ih/2)*2'")
+        command.append(webm_path)
+        command = author.Command(argv=command)
+        self.mp4_task.addCommand(command)
+
+        montage_template = os.path.join(self.montage_jpg_path,self.plate_file_name+".%04d.jpg")
+        if not os.path.exists(self.montage_jpg_path):
+            os.makedirs(self.montage_jpg_path)
+
+        select_code = len(self.copy_file_list) / 30 
+        if select_code == 0:
+            select_code = 1
+
+        command = ['rez-env',"ffmpeg","--","ffmpeg","-y"]
+        command.append("-r")
+        command.append("24")
+        command.append("-i")
+        command.append(mov_path)
+        command.append("-vf")
+        command.append("select='gte(n\,{0})*not(mod(n\,{0}))'".format(select_code))
+        command.append("-vsync")
+        command.append("0")
+        command.append("-f")
+        command.append("image2")
+        command.append(montage_template)
+        command = author.Command(argv=command)
+        self.mp4_task.addCommand(command)
+
+        montage_path = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+"stream.jpeg")
+
+        montage_template = os.path.join(self.montage_jpg_path,self.plate_file_name+".*")
+
+        command = ['montage']
+        command.append(montage_template)
+        command.append("-geometry")
+        command.append("240x+0+0")
+        command.append("-tile")
+        command.append("x1")
+        command.append("-format")
+        command.append("jpeg")
+        command.append("-quality")
+        command.append("92")
+        command.append(montage_path)
+
+        command = author.Command(argv=command)
+        self.mp4_task.addCommand(command)
+
+
+        self.sg_task.addChild(self.mp4_task)
     
     def create_sg_job(self):
 
@@ -410,6 +525,16 @@ class Publish:
         self.rm_task.addChild(self.sg_task)
     
     def create_rm_job(self):
+
+        montage_path = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+"stream.jpeg")
+
+        webm_path = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+".webm")
 
         self.rm_task = author.Task(title = "rm")
         cmd = ['rm','-f',self.nuke_script]
@@ -422,6 +547,18 @@ class Publish:
             self.rm_task.addCommand(command)
 
         cmd = ['rm','-f',self.sg_script]
+        command = author.Command(argv=cmd)
+        self.rm_task.addCommand(command)
+
+        cmd = ['rm','-f',montage_path]
+        command = author.Command(argv=cmd)
+        self.rm_task.addCommand(command)
+
+        cmd = ['rm','-rf',self.montage_jpg_path]
+        command = author.Command(argv=cmd)
+        self.rm_task.addCommand(command)
+
+        cmd = ['rm','-f',webm_path]
         command = author.Command(argv=cmd)
         self.rm_task.addCommand(command)
 
@@ -473,7 +610,7 @@ class Publish:
             nk += '\n'
             nk += '\n'
             nk += 'read = nuke.nodes.Read( file="{}" )\n'.format( scan_path )
-            nk += 'read["colorspace"].setValue("{}")\n'.format(setting.colorspace)
+            nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
             nk += 'read["first"].setValue( {} )\n'.format(int(self.master_input.start_frame))
             nk += 'read["last"].setValue( {} )\n'.format( int(self.master_input.end_frame))
             nk += 'read["frame"].setValue( "frame+{}")\n'.format( int(info['just_in']-1))
@@ -496,7 +633,7 @@ class Publish:
             if self.file_ext == "exr":
                 nk += 'write["compression"].setValue("PIZ Wavelet (32 scanlines)")\n'
             nk += 'write["create_directories"].setValue(True)\n'
-            nk += 'write["colorspace"].setValue("{}")\n'.format(setting.colorspace)
+            nk += 'write["colorspace"].setValue("{}")\n'.format(setting.scan_colorspace)
             nk += 'write["frame"].setValue( "frame+1000+{}")\n'.format( int(info['retime_start_frame']-1))
             nk += 'nuke.execute(write,1,{},1)\n'.format(int(info['retime_duration']))
         
@@ -527,7 +664,6 @@ class Publish:
     
         setting = Output(output_info)
 
-        self.colorspace = setting.colorspace
         
         jpg_path = os.path.join(self.plate_jpg_path,self.plate_file_name+".%04d.jpg")
         jpg_2k_path = os.path.join(self.plate_jpg_2k_path,self.plate_file_name+".%04d.jpg")
@@ -555,7 +691,7 @@ class Publish:
         nk += 'read = nuke.nodes.Read( name="Read1",file="{}" )\n'.format( read_path )
         nk += 'read["first"].setValue( {} )\n'.format( 1001 )
         nk += 'read["last"].setValue( {} )\n'.format(int(1000+frame_count))
-        nk += 'read["colorspace"].setValue("{}")\n'.format(setting.colorspace)
+        nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
         if self.file_ext  in ["dpx"] and project == "sweethome" : 
             nk += 'read["colorspace"].setValue("{}")\n'.format(setting.mov_colorspace)
         tg = 'read'
@@ -637,16 +773,39 @@ class Publish:
                                 self.seq_name,
                                 self.shot_name,"plate",
                                 self.plate_file_name+".mov")
+
+        mp4_path = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+".mp4")
+
+        webm_path = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+".webm")
         #shotgun 
 
+        jpg_path = os.path.join(self.plate_jpg_path,self.plate_file_name+".1001.jpg")
+
+        montage_path = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+"stream.jpeg")
+        
         nk = ''
         nk += 'import shotgun_api3\n'
+        nk += 'import time\n'
         nk += 'WW_SG_HOST = "https://west.shotgunstudio.com"\n'
         nk += 'script_name = "westworld_util"\n'
         nk += 'script_key = "yctqnqdjd0bttz)ornewKuitt"\n'
         nk += 'sg = shotgun_api3.Shotgun(WW_SG_HOST,script_name = script_name,api_key=script_key)\n'
-        nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie" )\n'%(self.version_ent['id'],mov_path)
-
+        #nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie" )\n'%(self.version_ent['id'],mov_path)
+        nk += 'sg.upload_thumbnail( "PublishedFile", %s, "%s")\n'%(self.published_ent['id'],jpg_path)
+        nk += 'sg.upload_thumbnail( "Version", %s, "%s")\n'%(self.version_ent['id'],jpg_path)
+        nk += 'sg.upload_filmstrip_thumbnail( "Version", %s, "%s")\n'%(self.version_ent['id'],montage_path)
+        nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_mp4" )\n'%(self.version_ent['id'],mp4_path)
+        nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_webm" )\n'%(self.version_ent['id'],webm_path)
+        #nk += 'time.sleep(20)\n'
 
 
         
@@ -655,6 +814,7 @@ class Publish:
             f.write( nk )
         print tmp_sg_script_file
         return tmp_sg_script_file
+    
 
     @property
     def plate_file_name(self):
@@ -745,6 +905,13 @@ class Publish:
         return temp
 
     @property
+    def montage_jpg_path(self):
+
+        temp = os.path.join(self._app.sgtk.project_path,'seq',self.seq_name,
+               self.shot_name,"plate","montage","v%03d_jpg"%self.version)
+        return temp
+
+    @property
     def plate_jpg_2k_path(self):
 
         temp = os.path.join(self._app.sgtk.project_path,'seq',self.seq_name,
@@ -775,6 +942,9 @@ class Publish:
         else:
             return False
 
+    def create_thumbnail(self):
+        pass
+
     def publish_to_shotgun(self):
         
         context = sgtk.Context(self._app.tank,project = self.project,
@@ -786,7 +956,22 @@ class Publish:
         file_ext = self.master_input.ext
         
 
-        if self._check_version():
+        key = [
+                ['project','is',self.project],
+                ['entity','is',self.shot_ent],
+                ["published_file_type","is",self.published_file_type],
+                ['name','is',self.version_file_name],
+                ['version_number','is',int(self.version)]
+               ]
+        self.published_ent = self._sg.find_one("PublishedFile",key,['version_number'])
+        
+        desc = {
+            "version" : self.version_ent,
+            "sg_colorspace": self.scan_colorspace
+        }
+
+        if self.published_ent:
+            self._sg.update("PublishedFile",self.published_ent['id'],desc)
             return
 
         if self.seq_type == "org":
@@ -807,5 +992,7 @@ class Publish:
             #"dependency_paths": publish_dependencies
         }
 
-        sgtk.util.register_publish(**publish_data)
+        self.published_ent = sgtk.util.register_publish(**publish_data)
+        
+        self._sg.update("PublishedFile",self.published_ent['id'],desc)
 
