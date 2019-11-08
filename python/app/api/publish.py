@@ -633,7 +633,7 @@ class Publish:
             if self.file_ext == "exr":
                 nk += 'write["compression"].setValue("PIZ Wavelet (32 scanlines)")\n'
             nk += 'write["create_directories"].setValue(True)\n'
-            nk += 'write["colorspace"].setValue("{}")\n'.format(setting.scan_colorspace)
+            nk += 'write["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
             nk += 'write["frame"].setValue( "frame+1000+{}")\n'.format( int(info['retime_start_frame']-1))
             nk += 'nuke.execute(write,1,{},1)\n'.format(int(info['retime_duration']))
         
