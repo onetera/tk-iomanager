@@ -555,7 +555,8 @@ class Publish:
         nk += 'read = nuke.nodes.Read( name="Read1",file="{}" )\n'.format( read_path )
         nk += 'read["first"].setValue( {} )\n'.format( 1001 )
         nk += 'read["last"].setValue( {} )\n'.format(int(1000+frame_count))
-        if self.file_ext  in ["dpx"] : 
+        nk += 'read["colorspace"].setValue("{}")\n'.format(setting.colorspace)
+        if self.file_ext  in ["dpx"] and project == "sweethome" : 
             nk += 'read["colorspace"].setValue("{}")\n'.format(setting.mov_colorspace)
         tg = 'read'
     

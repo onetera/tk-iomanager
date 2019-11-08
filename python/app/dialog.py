@@ -189,11 +189,15 @@ class AppDialog(QtGui.QWidget):
             index = model.createIndex(row,0)
             check = model.data(index,QtCore.Qt.CheckStateRole )
             if check == QtCore.Qt.CheckState.Checked:
+                scan_version_index = model.createIndex(row,MODEL_KEYS['version'])
+                scan_version = model.data(scan_version_index,QtCore.Qt.DisplayRole)
+                scan_type_index = model.createIndex(row,MODEL_KEYS['type'])
+                scan_type = model.data(scan_type_index,QtCore.Qt.DisplayRole)
                 scan_name_index = model.createIndex(row,MODEL_KEYS['scan_name'])
                 scan_name = model.data(scan_name_index,QtCore.Qt.DisplayRole)
                 shot_name_index = model.createIndex(row,MODEL_KEYS['shot_name'])
                 shot_name = model.data(shot_name_index,QtCore.Qt.DisplayRole)
-                dict_name = shot_name+"_"+scan_name
+                dict_name = shot_name+"_"+scan_name+"_"+scan_type+"_"+scan_version
                 if shot_name:
                     if group_model.has_key(dict_name):
                         group_model[dict_name].append(row)
