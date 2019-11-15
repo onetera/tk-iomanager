@@ -14,6 +14,17 @@ codecs = {
     "Apple ProRes 422 Proxy":"apco",
     "Avid DNxHD Codec":"AVdn"}
 
+colorspace_set = {
+
+    "ACES - ACEScg"     : "Output - Rec.709",
+    "ACES - ACES2065-1" : "Output - Rec.709",
+    "AlexaV3LogC"       : "AlexaViewer",
+    "Cineon"            : "rec709",
+    "rec709"            : "rec709",
+
+}
+
+
 class Output(object):
     
 
@@ -587,9 +598,6 @@ class Publish:
                                ['sg_colorspace','sg_mov_codec',
                                'sg_out_format','sg_fps','sg_mov_colorspace'])
 
-    
-    
-        setting = Output(output_info)
 
         if not self.master_input.retime_job:
             return
@@ -697,7 +705,7 @@ class Publish:
         nk += 'read["last"].setValue( {} )\n'.format(int(1000+frame_count))
         nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
         if self.file_ext  in ["dpx"] and project == "sweethome" : 
-            nk += 'read["colorspace"].setValue("{}")\n'.format(setting.mov_colorspace)
+            nk += 'read["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
         tg = 'read'
     
         #gizmo = ''
@@ -721,7 +729,7 @@ class Publish:
             nk += 'write   = nuke.nodes.Write(name="ww_write_2k", inputs = [%s],file=output )\n'% reformat
             nk += 'write["file_type"].setValue( "jpeg" )\n'
             nk += 'write["create_directories"].setValue(True)\n'
-            nk += 'write["colorspace"].setValue("{}")\n'.format(setting.mov_colorspace)
+            nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
             nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
             nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
             nk += 'nuke.execute(write,1001,{},1)\n'.format(int(1000+frame_count))
@@ -730,7 +738,7 @@ class Publish:
         nk += 'write   = nuke.nodes.Write(name="ww_write", inputs = [%s],file=output )\n'% tg
         nk += 'write["file_type"].setValue( "jpeg" )\n'
         nk += 'write["create_directories"].setValue(True)\n'
-        nk += 'write["colorspace"].setValue("{}")\n'.format(setting.mov_colorspace)
+        nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
         nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
         nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
         #nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
@@ -747,7 +755,7 @@ class Publish:
         nk += 'write["file_type"].setValue( "mov" )\n'
         nk += 'write["create_directories"].setValue(True)\n'
         nk += 'write["mov64_codec"].setValue( "{}")\n'.format(setting.mov_codec)
-        nk += 'write["colorspace"].setValue("{}")\n'.format(setting.mov_colorspace)
+        nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
         nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
         #nk += 'write["colorspace"].setValue( "Cineon" )\n'
         #nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
@@ -912,7 +920,7 @@ class Publish:
     def montage_jpg_path(self):
 
         temp = os.path.join(self._app.sgtk.project_path,'seq',self.seq_name,
-               self.shot_name,"plate","montage","v%03d_jpg"%self.version)
+               self.shot_name,"plate","montage","%s_v%03d_jpg"%(self.seq_type,self.version))
         return temp
 
     @property

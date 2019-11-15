@@ -34,7 +34,6 @@ COLORSPACE=[
     "ACES - ACES2065-1",
     "ACES - ACEScg",
     "rec709",
-    "Gamma2.4",
     "Cineon",
     "AlexaV3LogC"
 
