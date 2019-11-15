@@ -274,6 +274,8 @@ class Publish:
             cmd = ['rez-env','nuke','--','nuke','-ix',self.nuke_retime_script]
             if not self.scan_colorspace.find("ACES") == -1: 
                 cmd = ['rez-env','nuke','ocio_config','--','nuke','-ix',self.nuke_retime_script]
+            if not self.scan_colorspace.find("Alexa") == -1: 
+                cmd = ['rez-env','nuke','alexa_config','--','nuke','-ix',self.nuke_retime_script]
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
             self.jpg_task.addChild(self.org_task)
@@ -402,6 +404,8 @@ class Publish:
         cmd = ['rez-env','nuke','--','nuke','-ix',self.nuke_script]
         if not self.scan_colorspace.find("ACES") == -1: 
             cmd = ['rez-env','nuke','ocio_config','--','nuke','-ix',self.nuke_script]
+        if not self.scan_colorspace.find("Alexa") == -1: 
+            cmd = ['rez-env','nuke','alexa_config','--','nuke','-ix',self.nuke_script]
         command = author.Command(argv=cmd)
         self.jpg_task.addCommand(command)
         self.mp4_task.addChild(self.jpg_task)
