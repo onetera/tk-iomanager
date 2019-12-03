@@ -187,6 +187,7 @@ class Publish:
 
         self.nuke_retime_script = self.create_nuke_retime_script()
         self.nuke_script = self.create_nuke_script()
+        self.nuke_mov_script = self.create_mov_nuke_script()
         self.sg_script = self.create_sg_script()
         #self.copy_script = self._create_copy_script()
 
@@ -290,6 +291,17 @@ class Publish:
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
             self.jpg_task.addChild(self.org_task)
+
+        elif self.nuke_mov_script:
+            self.org_task = author.Task(title = "create mov")
+            cmd = ['rez-env','nuke','--','nuke','-ix',self.nuke_mov_script]
+            if not self.scan_colorspace.find("ACES") == -1: 
+                cmd = ['rez-env','nuke','ocio_config','--','nuke','-ix',self.nuke_mov_script]
+            if not self.scan_colorspace.find("Alexa") == -1: 
+                cmd = ['rez-env','nuke','alexa_config','--','nuke','-ix',self.nuke_mov_script]
+            command = author.Command(argv=cmd)
+            self.org_task.addCommand(command)
+            self.jpg_task.addChild(self.org_task)
         else:
             self.create_copy_job()
     
@@ -384,7 +396,12 @@ class Publish:
         
         mov_name = self.plate_file_name+".mov"
         read_path = os.path.join(self.plate_path,self.plate_file_name+".%04d."+self.file_ext)
-        
+        if self.master_input.ext == "mov":
+            read_path = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+"_"+self.scan_colorspace.split("-")[-1]+".mov")
+
         key = [
                 ['entity','is',self.shot_ent],
                 ['code','is',mov_name]
@@ -410,6 +427,8 @@ class Publish:
         return
     
     def create_jpg_job(self):
+        
+
 
         self.jpg_task = author.Task(title = "render jpg")
         cmd = ['rez-env','nuke','--','nuke','-ix',self.nuke_script]
@@ -417,6 +436,9 @@ class Publish:
             cmd = ['rez-env','nuke','ocio_config','--','nuke','-ix',self.nuke_script]
         if not self.scan_colorspace.find("Alexa") == -1: 
             cmd = ['rez-env','nuke','alexa_config','--','nuke','-ix',self.nuke_script]
+        if self.master_input.ext == "mov":
+            cmd = ["echo","'pass'"]
+
         command = author.Command(argv=cmd)
         self.jpg_task.addCommand(command)
         self.mp4_task.addChild(self.jpg_task)
@@ -486,8 +508,9 @@ class Publish:
         montage_template = os.path.join(self.montage_jpg_path,self.plate_file_name+".%04d.jpg")
         if not os.path.exists(self.montage_jpg_path):
             os.makedirs(self.montage_jpg_path)
+        
+        select_code = (int(self.master_input.just_out)-int(self.master_input.just_in)) / 30 
 
-        select_code = len(self.copy_file_list) / 30 
         if select_code == 0:
             select_code = 1
 
@@ -558,6 +581,11 @@ class Publish:
         
         if self.master_input.retime_job:
             cmd = ['rm','-f',self.nuke_retime_script]
+            command = author.Command(argv=cmd)
+            self.rm_task.addCommand(command)
+
+        if self.nuke_mov_script:
+            cmd = ['rm','-f',self.nuke_mov_script]
             command = author.Command(argv=cmd)
             self.rm_task.addCommand(command)
 
@@ -649,6 +677,75 @@ class Publish:
             nk += 'write["frame"].setValue( "frame+1000+{}")\n'.format( int(info['retime_start_frame']-1))
             nk += 'nuke.execute(write,1,{},1)\n'.format(int(info['retime_duration']))
         
+        nk += 'exit()\n'
+
+        if not os.path.exists( os.path.dirname(tmp_nuke_script_file) ):
+            cur_umask = os.umask(0)
+            os.makedirs(os.path.dirname(tmp_nuke_script_file),0777 )
+            os.umask(cur_umask)
+
+        with open( tmp_nuke_script_file, 'w' ) as f:
+            f.write( nk )
+        return tmp_nuke_script_file
+    
+
+    def create_mov_nuke_script(self):
+    
+        if not self.master_input.ext == "mov":
+            return
+
+        width,height = self.master_input.resolution.split("x")
+        app = sgtk.platform.current_bundle()
+        context = app.context
+        project = context.project
+        shotgun = app.sgtk.shotgun
+
+        output_info = shotgun.find_one("Project",[['id','is',project['id']]],
+                               ['sg_colorspace','sg_mov_codec',
+                               'sg_out_format','sg_fps','sg_mov_colorspace'])
+
+        setting = Output(output_info)
+
+        scan_path = os.path.join(self.master_input.scan_path,
+                                 self.master_input.scan_name
+                                 )
+        org_path = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+self.scan_colorspace.split("-")[-1]+".mov")
+        mov_path = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+".mov")
+        tmp_nuke_script_file = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+"_mov.py")
+
+        nk = ''
+        nk += 'import nuke\n'
+        nk += 'read = nuke.nodes.Read( file="{}" )\n'.format( scan_path )
+        nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
+        nk += 'read["first"].setValue( {} )\n'.format(int(self.master_input.just_in))
+        nk += 'read["last"].setValue( {} )\n'.format( int(self.master_input.just_out))
+        tg = 'read'
+        nk += 'output = "{}"\n'.format( org_path )
+        nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n'% tg
+        nk += 'write["file_type"].setValue( "mov" )\n'
+        nk += 'write["create_directories"].setValue(True)\n'
+        nk += 'write["mov64_codec"].setValue( "{}")\n'.format(setting.mov_codec)
+        nk += 'write["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
+        nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
+        nk += 'nuke.execute(write,{0},{1},1)\n'.format(int(self.master_input.just_in),int(self.master_input.just_out))
+
+        nk += 'output = "{}"\n'.format( mov_path )
+        nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n'% tg
+        nk += 'write["file_type"].setValue( "mov" )\n'
+        nk += 'write["create_directories"].setValue(True)\n'
+        nk += 'write["mov64_codec"].setValue( "{}")\n'.format(setting.mov_codec)
+        nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
+        nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
+        nk += 'nuke.execute(write,{0},{1},1)\n'.format(int(self.master_input.just_in),int(self.master_input.just_out))
         nk += 'exit()\n'
 
         if not os.path.exists( os.path.dirname(tmp_nuke_script_file) ):
@@ -797,7 +894,7 @@ class Publish:
                                 self.plate_file_name+".webm")
         #shotgun 
 
-        jpg_path = os.path.join(self.plate_jpg_path,self.plate_file_name+".1001.jpg")
+        jpg_path = os.path.join(self.montage_jpg_path,self.plate_file_name+".0001.jpg")
 
         montage_path = os.path.join(self._app.sgtk.project_path,'seq',
                                 self.seq_name,
@@ -991,11 +1088,17 @@ class Publish:
         else:
             published_type = "Source"
             
+        published_file = os.path.join(self.plate_path,self.plate_file_name+".%04d."+file_ext)
+        if self.master_input.ext == "mov":
+            published_file = os.path.join(self._app.sgtk.project_path,'seq',
+                                self.seq_name,
+                                self.shot_name,"plate",
+                                self.plate_file_name+"_orignal.mov")
 
         publish_data = {
             "tk": self._app.tank,
             "context": context,
-            "path": os.path.join(self.plate_path,self.plate_file_name+".%04d."+file_ext),
+            "path": published_file,
             "name": self.version_file_name,
             "created_by": self.user,
             "version_number": self.version,

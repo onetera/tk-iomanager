@@ -9,6 +9,24 @@ import pydpx_meta
 import OpenEXR
 import math
 from .constant import *
+import ffmpeg
+
+class MOV_INFO:
+
+    def __init__(self,mov_file):
+
+        self.mov_file = mov_file
+    
+    @property
+    def video_stream(self):
+        probe = ffmpeg.probe(self.mov_file)
+        video_stream = next((stream for stream in probe['streams'] 
+                             if stream['codec_type'] == 'video'), None)
+        
+        if video_stream : 
+            return video_stream
+        
+        return None
 
 
 class Validate(object):
@@ -34,15 +52,21 @@ class Validate(object):
 
 
             seq_path = self._get_data(row,MODEL_KEYS['scan_path'])
+            ext = self._get_data(row,MODEL_KEYS['ext'])
+            if ext == "mov":
+                return
+                scan_name = self._get_data(row, MODEL_KEYS['scan_name'])
+                seq_path = os.path.join(seq_path,scan_name)
             seq = pyseq.get_sequences(seq_path)
+
             if not seq:
                 return
             seq = seq[0]
-            start_timecode = self._get_timecode(seq,seq.start())
+            start_timecode = self._get_timecode(seq,self._get_start(seq))
             start_frame = Timecode(framerate,start_timecode).frame_number
             
             timecode_in = self._get_data(row,MODEL_KEYS['timecode_in'])
-            just_in_frame = Timecode(int(framerate),timecode_in).frame_number
+            just_in_frame = Timecode(round(framerate),timecode_in).frame_number
             
             timecode_out = self._get_data(row,MODEL_KEYS['timecode_out'])
             just_out_frame = Timecode(framerate,timecode_out).frame_number
@@ -141,6 +165,17 @@ class Validate(object):
         self.model.setData(index,data,3)
 
     def _get_timecode(self,seq,frame):
+
+        if seq.head().split(".")[-1] == "mov":
+
+            mov_file = os.path.join(seq.dirname,seq.head())
+            mov_info = MOV_INFO(mov_file)
+            start_timecode = mov_info.video_stream['tags']['timecode']
+            n ,d = mov_info.video_stream['r_frame_rate'].split("/")
+            frame_rate = float(n) / float(d)
+            start_timecode = Timecode(round(frame_rate),str(start_timecode))
+            return str(start_timecode + (int(frame) - 1))
+
         if seq.tail() == ".exr":
             exr_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%frame+seq.tail())
             exr = OpenEXR.InputFile(exr_file)
@@ -154,3 +189,10 @@ class Validate(object):
             return dpx.tv_header.time_code
         else:
             return ""
+
+    def _get_start(self,seq):
+
+        if seq.head().split(".")[-1] == "mov":
+            return 1
+        return seq.start()
+

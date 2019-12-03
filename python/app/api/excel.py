@@ -10,12 +10,93 @@ import OpenEXR
 from PIL import Image
 from sgtk.platform.qt import QtCore, QtGui
 from .constant import *
+import glob
+import ffmpeg
+from timecode import Timecode
+from edl import Parser
+
+class MOV_INFO:
+
+    def __init__(self,mov_file,event=None):
+
+        self.mov_file = mov_file
+        self.event = event
+        self.dirname = os.path.dirname(mov_file)
+        self.scan_name = os.path.basename(mov_file)
+        self.ext = "mov"
+    
+    @property
+    def video_stream(self):
+        probe = ffmpeg.probe(self.mov_file)
+        video_stream = next((stream for stream in probe['streams'] 
+                             if stream['codec_type'] == 'video'), None)
+        
+        if video_stream : 
+            return video_stream
+        
+        return None
+    
+    def master_timecode(self):
+
+        start_timecode = self.video_stream['tags']['timecode']
+        start_timecode = Timecode(round(self.framerate()),str(start_timecode))
+        return str(start_timecode)
+
+    def head(self):
+        return self.scan_name
+    
+    def tail(self):
+        return None
+    
+    def format(self,format_str):
+        return None
+    
+
+    def frames(self):
+
+        return self.video_stream['nb_frames']
+
+    def start(self):
+        if self.event:
+            start_timecode = str(self.event.rec_start_tc)
+            
+            mod_start_frame = Timecode(round(self.framerate()),self.master_timecode()).frame_number
+            start_frame = Timecode(round(self.framerate()),start_timecode).frame_number
+
+            print start_timecode
+            print start_frame
+            print mod_start_frame
+
+            return start_frame - 86400 + 1
+        
+        return 1
+            
+            
+
+    def end(self):
+        if self.event:
+            end_timecode = str(self.event.rec_end_tc)
+            mod_start_frame = Timecode(round(self.framerate()),self.master_timecode()).frame_number
+            end_frame = Timecode(round(self.framerate()),end_timecode).frame_number
+            
+            return end_frame - 86400
+        
+        return self.frames()
+    
+    def framerate(self):
+        n ,d = self.video_stream['r_frame_rate'].split("/")
+        frame_rate = float(n) / float(d)
+        return frame_rate
+    
+    
+
 
 def create_excel(path):
     
     sequences = _get_sequences(path)
+    movs = _get_movs(path)
+    sequences = movs + sequences
     array = _create_seq_array(sequences)
-    
     return array
 
 def _create_seq_array(sequences):
@@ -30,26 +111,40 @@ def _create_seq_array(sequences):
         info.insert(MODEL_KEYS['version'],"")
         info.insert(MODEL_KEYS['type'], "org")
         info.insert(MODEL_KEYS['scan_path'], seq.dirname)
-        info.insert(MODEL_KEYS['scan_name'], seq.head().split(".")[0])
+        info.insert(MODEL_KEYS['scan_name'], seq.head())
         info.insert(MODEL_KEYS['pad'],seq.format('%p'))
         info.insert(MODEL_KEYS['ext'],_get_ext(seq))
         info.insert(MODEL_KEYS['resolution'] , _get_resolution(seq))
-        info.insert(MODEL_KEYS['start_frame'], seq.start())
-        info.insert(MODEL_KEYS['end_frame'], seq.end())
-        info.insert(MODEL_KEYS['duraiton'], len(seq.frames()))
+        info.insert(MODEL_KEYS['start_frame'], _get_start(seq))
+        info.insert(MODEL_KEYS['end_frame'], _get_end(seq))
+        info.insert(MODEL_KEYS['duraiton'],_get_duration(seq))
         info.insert(MODEL_KEYS['retime_duration'],None)
         info.insert(MODEL_KEYS['retime_percent'],None)
         info.insert(MODEL_KEYS["retime_start_frame"],None)
-        info.insert(MODEL_KEYS['timecode_in'], _get_time_code(seq,seq.start()))
-        info.insert(MODEL_KEYS['timecode_out'],_get_time_code(seq,seq.end()))
-        info.insert(MODEL_KEYS['just_in'],seq.start())
-        info.insert(MODEL_KEYS['just_out'], seq.end())
+        info.insert(MODEL_KEYS['timecode_in'], _get_time_code(seq,_get_start(seq)))
+        info.insert(MODEL_KEYS['timecode_out'],_get_time_code(seq,_get_end(seq)))
+        info.insert(MODEL_KEYS['just_in'],_get_start(seq))
+        info.insert(MODEL_KEYS['just_out'], _get_end(seq))
         info.insert(MODEL_KEYS['framerate'] ,_get_framerate(seq))
         info.insert(MODEL_KEYS['date'] , "")
         array.append(info)
     
     return array
 
+def _get_duration(seq):
+    if _get_ext(seq)== "mov":
+
+        return seq.frames()
+    else:
+        return len(seq.frames())
+        
+def _get_start(seq):
+
+    return seq.start()
+
+def _get_end(seq):
+
+    return seq.end()
 
 def _get_ext(seq):
     if not seq.tail():
@@ -57,6 +152,18 @@ def _get_ext(seq):
     return seq.tail().split(".")[-1]
 
 def _get_time_code(seq,frame):
+    if _get_ext(seq) == "mov":
+
+        mov_file = os.path.join(seq.dirname,seq.head())
+        mov_info = MOV_INFO(mov_file)
+        start_timecode = mov_info.video_stream['tags']['timecode']
+        n ,d = mov_info.video_stream['r_frame_rate'].split("/")
+        frame_rate = float(n) / float(d)
+        start_timecode = Timecode(round(frame_rate),str(start_timecode))
+        return str(start_timecode + (int(frame) - 1))
+
+
+
     if seq.tail() == ".exr":
         exr_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%frame+seq.tail())
         exr = OpenEXR.InputFile(exr_file)
@@ -85,6 +192,15 @@ def _get_time_code(seq,frame):
         return ""
 
 def _get_framerate(seq):
+
+    if _get_ext(seq) == "mov":
+
+        mov_file = os.path.join(seq.dirname,seq.head())
+        mov_info = MOV_INFO(mov_file)
+        n ,d = mov_info.video_stream['r_frame_rate'].split("/")
+        frame_rate = float(n) / float(d)
+        return frame_rate
+
     if seq.tail() == ".exr":
         exr_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
         exr = OpenEXR.InputFile(exr_file)
@@ -114,6 +230,13 @@ def _get_framerate(seq):
 
 def _get_resolution(seq):
 
+    if _get_ext(seq) == "mov":
+
+        mov_file = os.path.join(seq.dirname,seq.head())
+        mov_info = MOV_INFO(mov_file)
+        width  = mov_info.video_stream['width']
+        height  = mov_info.video_stream['height']
+        return "%d x %d"%(width,height)
 
     if seq.tail() == ".exr":
         exr_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
@@ -160,10 +283,34 @@ def _get_sequences(path):
             if sequence:
                 sequences.extend(sequence)
     
+
     return sequences
 
- 
+def _get_movs(path):
+    
+    movs = []
 
+    mov_files = glob.glob(os.path.join(path,"*.mov"))
+    
+    for mov_file in mov_files:
+        
+        edl_file = mov_file.replace(".mov",".edl")
+        mov_info = MOV_INFO(mov_file)
+        if os.path.exists(edl_file):
+            parser = Parser(mov_info.framerate())
+            f = open(edl_file)
+            dl = parser.parse(f)
+            for event in dl:
+                mov_info = MOV_INFO(mov_file,event)
+                movs.append(mov_info)    
+            f.close()
+        else:
+            mov_info = MOV_INFO(mov_file)
+            movs.append(mov_info)    
+
+    return movs
+
+ 
 
 
 
@@ -294,6 +441,17 @@ class ExcelWriteModel:
 
 
 def get_time_code(dir_name,head,frame_format,frame,tail):
+
+    if tail == "mov":
+
+        mov_file = os.path.join(dir_name,head)
+        mov_info = MOV_INFO(mov_file)
+        start_timecode = mov_info.video_stream['tags']['timecode']
+        n ,d = mov_info.video_stream['r_frame_rate'].split("/")
+        frame_rate = float(n) / float(d)
+        start_timecode = Timecode(round(frame_rate),str(start_timecode))
+        return str(start_timecode + (int(frame) - 1))
+
     if tail == "exr":
         exr_file = os.path.join(dir_name,head+"."+frame_format%frame+"."+tail)
         exr = OpenEXR.InputFile(exr_file)
