@@ -397,10 +397,11 @@ class Publish:
         mov_name = self.plate_file_name+".mov"
         read_path = os.path.join(self.plate_path,self.plate_file_name+".%04d."+self.file_ext)
         if self.master_input.ext == "mov":
+            colorspace = self.scan_colorspace.replace("ACES-","")
             read_path = os.path.join(self._app.sgtk.project_path,'seq',
                                 self.seq_name,
                                 self.shot_name,"plate",
-                                self.plate_file_name+"_"+self.scan_colorspace.split("-")[-1]+".mov")
+                                self.plate_file_name+"_"+colorspace+".mov")
 
         key = [
                 ['entity','is',self.shot_ent],
@@ -709,10 +710,11 @@ class Publish:
         scan_path = os.path.join(self.master_input.scan_path,
                                  self.master_input.scan_name
                                  )
+        colorspace = self.scan_colorspace.replace("ACES-","")
         org_path = os.path.join(self._app.sgtk.project_path,'seq',
                                 self.seq_name,
                                 self.shot_name,"plate",
-                                self.plate_file_name+self.scan_colorspace.split("-")[-1]+".mov")
+                                self.plate_file_name+"_"+colorspace+".mov")
         mov_path = os.path.join(self._app.sgtk.project_path,'seq',
                                 self.seq_name,
                                 self.shot_name,"plate",
