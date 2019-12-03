@@ -136,6 +136,13 @@
       </widget>
      </item>
      <item>
+      <widget class="QPushButton" name="collect">
+       <property name="text">
+        <string>Collect</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QPushButton" name="publish">
        <property name="text">
         <string>Publish</string>

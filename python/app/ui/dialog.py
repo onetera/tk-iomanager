@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'dialog.ui'
 #
-# Created: Fri Nov  8 12:39:00 2019
+# Created: Tue Dec  3 18:36:45 2019
 #      by: pyside-uic 0.2.15 running on PySide 1.2.4
 #
 # WARNING! All changes made in this file will be lost!
@@ -68,6 +68,9 @@ class Ui_Dialog(object):
         self.save_excel = QtGui.QPushButton(Dialog)
         self.save_excel.setObjectName("save_excel")
         self.horizontalLayout.addWidget(self.save_excel)
+        self.collect = QtGui.QPushButton(Dialog)
+        self.collect.setObjectName("collect")
+        self.horizontalLayout.addWidget(self.collect)
         self.publish = QtGui.QPushButton(Dialog)
         self.publish.setObjectName("publish")
         self.horizontalLayout.addWidget(self.publish)
@@ -87,6 +90,7 @@ class Ui_Dialog(object):
         self.edit_excel.setText(QtGui.QApplication.translate("Dialog", "Edit", None, QtGui.QApplication.UnicodeUTF8))
         self.validate_excel.setText(QtGui.QApplication.translate("Dialog", "Validate", None, QtGui.QApplication.UnicodeUTF8))
         self.save_excel.setText(QtGui.QApplication.translate("Dialog", "Save", None, QtGui.QApplication.UnicodeUTF8))
+        self.collect.setText(QtGui.QApplication.translate("Dialog", "Collect", None, QtGui.QApplication.UnicodeUTF8))
         self.publish.setText(QtGui.QApplication.translate("Dialog", "Publish", None, QtGui.QApplication.UnicodeUTF8))
 
 from . import resources_rc

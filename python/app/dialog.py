@@ -21,6 +21,7 @@ from .ui.dialog import Ui_Dialog
 from .model.seq_item_model import *
 from .api import excel
 from .api import publish
+from .api import collect
 from .api import validate
 from .api.constant import *
 
@@ -66,6 +67,7 @@ class AppDialog(QtGui.QWidget):
         self.ui.save_excel.clicked.connect(self._save_excel)
 
         self.ui.publish.clicked.connect(self._publish)
+        self.ui.collect.clicked.connect(self._collect)
         self.ui.check_all_btn.clicked.connect(self._check_all)
         self.ui.uncheck_all_btn.clicked.connect(self._uncheck_all)
         self.ui.edit_excel.clicked.connect(self._open_excel)
@@ -239,6 +241,40 @@ class AppDialog(QtGui.QWidget):
             publish.Publish(master_input,colorspace)
 
 
+    def _collect(self):
+
+        model = self.ui.seq_model_view.model()
+        colorspace = str(self.ui.colorspace_combo.currentText())
+        collect_path = QtGui.QFileDialog().getExistingDirectory(None, 
+        'Collect directory', 
+        os.path.join(self._app.sgtk.project_path,'product'))
+
+        group_model = OrderedDict()
+        for row in range(0,model.rowCount(None)):
+
+            index = model.createIndex(row,0)
+            check = model.data(index,QtCore.Qt.CheckStateRole )
+            if check == QtCore.Qt.CheckState.Checked:
+                scan_type_index = model.createIndex(row,MODEL_KEYS['type'])
+                scan_type = model.data(scan_type_index,QtCore.Qt.DisplayRole)
+                scan_name_index = model.createIndex(row,MODEL_KEYS['scan_name'])
+                scan_name = model.data(scan_name_index,QtCore.Qt.DisplayRole)
+                dict_name = scan_name+"_"+scan_type
+                if group_model.has_key(dict_name):
+                    group_model[dict_name].append(row)
+                else:
+                    group_model[dict_name] = []
+                    group_model[dict_name].append(row)
+
+                
+                
+        
+        print group_model
+        for key in group_model.keys():
+            print key
+            print group_model[key]
+            collect.Collect(model,key,group_model[key],colorspace,str(collect_path))
+            
 
 
 
