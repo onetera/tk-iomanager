@@ -47,7 +47,8 @@ except ImportError:
 from rez.resolved_context import ResolvedContext
 cotext = ResolvedContext(['tractor','pyseq','Xlrd','XlsxWriter','pydpx_meta','pyopenexr_tk','Pillow','timecode','ffmpeg','ffmpeg_python','edl'])
 module_path = cotext.get_environ()['PYTHONPATH']
-os.environ['PATH'] = cotext.get_environ()['PATH']
+ffmpeg_cotext = ResolvedContext(['ffmpeg'])
+os.environ['PATH']+= (":"+ffmpeg_cotext.get_environ()['PATH'])
 set_module_path(module_path)
 
 
