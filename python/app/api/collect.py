@@ -180,7 +180,7 @@ class Collect:
 
         for row in self.rows:
             
-            py_filename = str(self.org_name) + "%04d.py"%(row+1)
+            py_filename = "."+ str(self.org_name) + "%04d.py"%(row+1)
             mov_filename = str(self.org_name) + "%04d.mov"%(row+1)
 
             tmp_nuke_script_file = os.path.join(str(self.collect_path),py_filename)

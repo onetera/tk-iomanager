@@ -54,6 +54,14 @@ class MOV_INFO:
 
     def frames(self):
 
+        if self.event:
+            end_timecode = str(self.event.rec_end_tc)
+            end_frame = Timecode(round(self.framerate()),end_timecode).frame_number
+
+            start_timecode = str(self.event.rec_start_tc)
+            start_frame = Timecode(round(self.framerate()),start_timecode).frame_number
+            duraiton = end_frame - start_frame
+            return duraiton
         return self.video_stream['nb_frames']
 
     def start(self):
@@ -62,10 +70,8 @@ class MOV_INFO:
             
             mod_start_frame = Timecode(round(self.framerate()),self.master_timecode()).frame_number
             start_frame = Timecode(round(self.framerate()),start_timecode).frame_number
-
-            print start_timecode
-            print start_frame
-            print mod_start_frame
+            
+            print start_timecode 
 
             return start_frame - 86400 + 1
         
@@ -76,10 +82,13 @@ class MOV_INFO:
     def end(self):
         if self.event:
             end_timecode = str(self.event.rec_end_tc)
-            mod_start_frame = Timecode(round(self.framerate()),self.master_timecode()).frame_number
             end_frame = Timecode(round(self.framerate()),end_timecode).frame_number
-            
-            return end_frame - 86400
+
+            start_timecode = str(self.event.rec_start_tc)
+            start_frame = Timecode(round(self.framerate()),start_timecode).frame_number
+            duraiton = end_frame - start_frame
+
+            return self.start() +  duraiton - 1
         
         return self.frames()
     
@@ -297,7 +306,7 @@ def _get_movs(path):
         edl_file = mov_file.replace(".mov",".edl")
         mov_info = MOV_INFO(mov_file)
         if os.path.exists(edl_file):
-            parser = Parser(mov_info.framerate())
+            parser = Parser(round(mov_info.framerate()))
             f = open(edl_file)
             dl = parser.parse(f)
             for event in dl:
