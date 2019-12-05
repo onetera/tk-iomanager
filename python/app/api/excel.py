@@ -164,9 +164,27 @@ def _get_thumbnail(seq):
         command = " ".join(command)
         os.system(command)
         return thumbnail_file
+    else:
+        original_file = os.path.join(seq.dirname,
+                                     seq.head()+seq.format("%p")%seq.start()+seq.tail())
+        
+        thumbnail_path = os.path.join(seq.dirname,".thumbnail")
+        thumbnail_file = os.path.join(thumbnail_path,
+                                     seq.head()+seq.format("%p")%seq.start()+".png")
+        if not os.path.exists(thumbnail_path):
+            os.makedirs(thumbnail_path)
 
+        command = ['rez-env',"oiio","--","oiiotool"]
+        command.append(original_file)
+        command.append("--resize")
+        command.append("240x144")
+        command.append("-o")
+        command.append(thumbnail_file)
 
-
+        command = " ".join(command)
+        os.system(command)
+        return thumbnail_file
+        
 def _get_duration(seq):
     if _get_ext(seq)== "mov":
 
