@@ -176,6 +176,9 @@ def _get_thumbnail(seq):
 
         command = ['rez-env',"oiio","--","oiiotool"]
         command.append(original_file)
+        command.append("--colorconvert")
+        command.append("linear")
+        command.append("sRGB")
         command.append("--resize")
         command.append("240x144")
         command.append("-o")
