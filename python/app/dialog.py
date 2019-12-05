@@ -189,9 +189,11 @@ class AppDialog(QtGui.QWidget):
             self.ui.edit_excel.setEnabled(True)
         else:
             model = SeqTableModel(excel.create_excel(path))
+            rows = model.rowCount(None)
             self.ui.excel_file_label.setText("No Saved Status")
 
         self.ui.seq_model_view.setModel(model)
+        self.ui.seq_model_view.verticalHeader().setDefaultSectionSize(144);
         model.dataChanged.connect(self._set_timecode)
 
     def _save_excel(self):
@@ -250,24 +252,41 @@ class AppDialog(QtGui.QWidget):
         os.path.join(self._app.sgtk.project_path,'product'))
 
         group_model = OrderedDict()
+        shot_group_model = OrderedDict()
         for row in range(0,model.rowCount(None)):
 
             index = model.createIndex(row,0)
             check = model.data(index,QtCore.Qt.CheckStateRole )
             if check == QtCore.Qt.CheckState.Checked:
+                shot_name_index = model.createIndex(row,MODEL_KEYS['shot_name'])
+                shot_name = model.data(shot_name_index,QtCore.Qt.DisplayRole)
                 scan_type_index = model.createIndex(row,MODEL_KEYS['type'])
                 scan_type = model.data(scan_type_index,QtCore.Qt.DisplayRole)
                 scan_name_index = model.createIndex(row,MODEL_KEYS['scan_name'])
                 scan_name = model.data(scan_name_index,QtCore.Qt.DisplayRole)
                 dict_name = scan_name+"_"+scan_type
-                if group_model.has_key(dict_name):
-                    group_model[dict_name].append(row)
+                if shot_name:
+                    dict_name = shot_name+"_"+scan_type
+                    if shot_group_model.has_key(dict_name):
+                        shot_group_model[dict_name].append(row)
+                    else:
+                        shot_group_model[dict_name] = []
+                        shot_group_model[dict_name].append(row)
+
                 else:
-                    group_model[dict_name] = []
-                    group_model[dict_name].append(row)
+                    if group_model.has_key(dict_name):
+                        group_model[dict_name].append(row)
+                    else:
+                        group_model[dict_name] = []
+                        group_model[dict_name].append(row)
 
                 
                 
+        for key in shot_group_model.keys():
+            print key
+            print shot_group_model[key]
+            merge = True
+            collect.Collect(model,key,shot_group_model[key],colorspace,str(collect_path),merge)
         
         print group_model
         for key in group_model.keys():

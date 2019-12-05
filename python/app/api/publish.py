@@ -614,7 +614,8 @@ class Publish:
     
     def submit_job(self):
 
-        self.job.spool(hostname="10.0.20.81",owner="west")
+        user = os.environ['USER']
+        self.job.spool(hostname="10.0.20.81",owner=user)
 
     def create_nuke_retime_script(self):
 

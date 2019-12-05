@@ -70,9 +70,6 @@ class MOV_INFO:
             
             mod_start_frame = Timecode(round(self.framerate()),self.master_timecode()).frame_number
             start_frame = Timecode(round(self.framerate()),start_timecode).frame_number
-            
-            print start_timecode 
-
             return start_frame - 86400 + 1
         
         return 1
@@ -114,7 +111,8 @@ def _create_seq_array(sequences):
     for seq in sequences:
         info = []
         info.insert(MODEL_KEYS['check'], QtGui.QCheckBox())
-        info.insert(MODEL_KEYS['roll'], "")
+        info.insert(MODEL_KEYS['thumbnail'],_get_thumbnail(seq))
+        info.insert(MODEL_KEYS['roll'],"")
         info.insert(MODEL_KEYS['seq_name'],"")
         info.insert(MODEL_KEYS['shot_name'], "")
         info.insert(MODEL_KEYS['version'],"")
@@ -139,6 +137,35 @@ def _create_seq_array(sequences):
         array.append(info)
     
     return array
+
+
+def _get_thumbnail(seq):
+
+    if _get_ext(seq)== "mov":
+
+        mov_file = os.path.join(seq.dirname,seq.scan_name)
+        thumbnail_path = os.path.join(seq.dirname,".thumbnail")
+        if not os.path.exists(thumbnail_path):
+            os.makedirs(thumbnail_path)
+        thumbnail_file = os.path.join(thumbnail_path,seq.scan_name.split(".")[0]+".%04d.png"%seq.start())
+        start_frame = seq.start()
+
+        command = ['rez-env',"ffmpeg","--","ffmpeg","-y"]
+        command.append("-i")
+        command.append(mov_file)
+        command.append("-vf")
+        command.append("select='gte(n\,{0})'".format(seq.start()-1))
+        command.append("-vframes")
+        command.append("1")
+        command.append("-s")
+        command.append("240x144")
+        command.append(thumbnail_file)
+
+        command = " ".join(command)
+        os.system(command)
+        return thumbnail_file
+
+
 
 def _get_duration(seq):
     if _get_ext(seq)== "mov":
@@ -286,6 +313,8 @@ def _get_sequences(path):
     sequences = []
 
     for temp in os.listdir(path):
+        if temp in ['.thumbnail']:
+            continue
         temp = os.path.join(path,temp)
         if os.path.isdir(temp):
             sequence = pyseq.get_sequences(temp)
@@ -320,7 +349,6 @@ def _get_movs(path):
     return movs
 
  
-
 
 
 
@@ -378,7 +406,14 @@ class ExcelWriteModel:
             for col in range(1,cols):
                 data = rWorksheet.cell_value( row, col )
                 if not data == "NaN":
-                    info.append(data)
+                    if col == 1:
+                        thumbnail_path = os.path.join(
+                            os.path.dirname(excel_file),
+                            ".thumbnail")
+                        thumbnail_file = os.path.join(thumbnail_path,data)
+                        info.append(thumbnail_file)
+                    else:
+                        info.append(data)
                 else:
                     info.append("")
             array.append(info)
@@ -402,11 +437,25 @@ class ExcelWriteModel:
                     if data == "" :
                         self.wWorksheet.write( row+1, col, "" )
                     else:
-                        self.wWorksheet.write( row+1, col, data )
+                        if col == 1:
+                            thumbnail_file = os.path.basename(data)
+                            self.wWorksheet.write( row+1, col, thumbnail_file )
+                        else:
+                            self.wWorksheet.write( row+1, col, data )
+                    if col == 1:
+                        #col = self.wWorksheet.col(1)
+                        #col.width = 240
+                        self.wWorksheet.set_row( row+1, 144 )   # 엑셀 높이설정 (썸네일크기 맞춰서)
+                        self.wWorksheet.insert_image( row+1, col,data,{'x_scale':1, 'y_scale': 1})
+
                 except Exception as e :
                     print e
                     pass
         
+        for col in MODEL_KEYS.values()[1:]:
+            self.wWorksheet.set_column( col,col ,15 )
+        self.wWorksheet.set_column( MODEL_KEYS['thumbnail'], MODEL_KEYS['thumbnail'], 40 )
+        self.wWorksheet.set_column( MODEL_KEYS['scan_path'], MODEL_KEYS['scan_path'], 45 )
         self.wWorkbook.close()
 
     def set_global_data( self ,temp_folder,scan_date ):
@@ -439,7 +488,7 @@ class ExcelWriteModel:
             col_size,rowsize = Image.open(img).size
             #self.wWorksheet.set_column( col, col, 20 )
             self.wWorksheet.set_row( row, 60 )   # 엑셀 높이설정 (썸네일크기 맞춰서)
-            self.wWorksheet.insert_image( row, col, img, {'x_offset':10, 'y_offset':5, 'x_scale': 0.05, 'y_scale': 0.05} )
+            self.wWorksheet.insert_image( row, col, img, {'x_scale': 1, 'y_scale': 1} )
 
     def insertData( self, row, col, string ):
         self.wWorksheet.write( row, col, string )

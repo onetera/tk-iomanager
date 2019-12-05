@@ -62,10 +62,11 @@ class Output(object):
 
 class Collect:
     
-    def __init__(self,model,org_name,rows,scan_colorspace,collect_path,parent=None):
+    def __init__(self,model,org_name,rows,scan_colorspace,collect_path,merge=False,parent=None):
         
         self.scan_colorspace = scan_colorspace
-
+        
+        self.merge = merge
         self._app = sgtk.platform.current_bundle()
         self._sg = self._app.shotgun
         self.project = self._app.context.project
@@ -78,8 +79,10 @@ class Collect:
         self.scan_name = self._get_data(MODEL_KEYS['scan_name'])
         self.scan_colorspace = scan_colorspace
 
-
-        self.nuke_mov_scripts = self.create_mov_nuke_script()
+        if self.merge:
+            self.nuke_mov_scripts = self.create_merge_mov_nuke_script()
+        else:
+            self.nuke_mov_scripts = self.create_mov_nuke_script()
 
         self.create_job()
         #self.submit_job()
@@ -101,8 +104,8 @@ class Collect:
         
        
         self.job = author.Job()
-        self.job.title = str('[IOM]' +self.org_name+" publish")
-        self.job.service = "comp"
+        self.job.title = str('[IOM]' +self.org_name+" collect")
+        self.job.service = "Linux64"
         self.job.priority = 10
         for nuke_script in self.nuke_mov_scripts:
             task = author.Task(title = "split")
@@ -116,8 +119,8 @@ class Collect:
             self.job.addChild(task)
 
     
-
-        self.job.spool(hostname="10.0.20.82",owner="dellfarm")
+        user = os.environ['USER']
+        self.job.spool(hostname="10.0.20.81",owner=user)
     
     
     def create_rm_job(self):
@@ -220,6 +223,63 @@ class Collect:
         return nuke_script_files
 
 
+    def create_merge_mov_nuke_script(self):
+    
+        nuke_script_files = []
+        app = sgtk.platform.current_bundle()
+        context = app.context
+        project = context.project
+
+        output_info = self._sg.find_one("Project",[['id','is',project['id']]],
+                               ['sg_colorspace','sg_mov_codec',
+                               'sg_out_format','sg_fps','sg_mov_colorspace'])
+
+        setting = Output(output_info)
+
+        scan_path = os.path.join(self.scan_path,
+                                 self.scan_name
+                                 )
+
+        
+            
+        py_filename = "."+ str(self.org_name) + ".py"
+        mov_filename = str(self.org_name) + ".mov"
+
+        tmp_nuke_script_file = os.path.join(str(self.collect_path),py_filename)
+        out_path = os.path.join(str(self.collect_path),mov_filename)
+        just_in = self._get_data(MODEL_KEYS['just_in'],self.rows[0])
+        just_out = self._get_data(MODEL_KEYS['just_out'],self.rows[-1])
+        framerate = self._get_data(MODEL_KEYS['framerate'],self.rows[0])
+
+        nk = ''
+        nk += 'import nuke\n'
+        nk += 'read = nuke.nodes.Read( file="{}" )\n'.format( scan_path )
+        nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
+        nk += 'read["first"].setValue( {} )\n'.format(int(just_in))
+        nk += 'read["last"].setValue( {} )\n'.format( int(just_out))
+        tg = 'read'
+        nk += 'output = "{}"\n'.format( out_path )
+        nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n'% tg
+        nk += 'write["file_type"].setValue( "mov" )\n'
+        nk += 'write["create_directories"].setValue(True)\n'
+        nk += 'write["mov64_codec"].setValue( "{}")\n'.format(setting.mov_codec)
+        nk += 'write["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
+        nk += 'write["mov64_fps"].setValue({})\n'.format(framerate)
+        nk += 'nuke.execute(write,{0},{1},1)\n'.format(int(just_in),int(just_out))
+        nk += 'exit()\n'
+
+
+        if not os.path.exists( os.path.dirname(tmp_nuke_script_file) ):
+            cur_umask = os.umask(0)
+            os.makedirs(os.path.dirname(tmp_nuke_script_file),0777 )
+            os.umask(cur_umask)
+
+        with open( tmp_nuke_script_file, 'w' ) as f:
+            f.write( nk )
+    
+        nuke_script_files.append(tmp_nuke_script_file)
+        
+        return nuke_script_files
 
 
     
