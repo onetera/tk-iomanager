@@ -428,8 +428,8 @@ class ExcelWriteModel:
                 data = rWorksheet.cell_value( row, col )
                 if not data == "NaN":
                     if col == 1:
-                        thumbnail_path = os.path.join(
-                            os.path.dirname(excel_file),
+                        path = rWorksheet.cell_value( row, 7 )
+                        thumbnail_path = os.path.join(path,
                             ".thumbnail")
                         thumbnail_file = os.path.join(thumbnail_path,data)
                         info.append(thumbnail_file)
