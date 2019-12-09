@@ -634,7 +634,7 @@ class Publish:
         
         scan_path = os.path.join(self.master_input.scan_path,
                                  self.master_input.scan_name
-                                 +"."+self.master_input.pad
+                                 +self.master_input.pad
                                  +"."+self.master_input.ext
                                  )
         org_path = os.path.join(self.plate_path,self.plate_file_name+".%04d."+self.file_ext)
@@ -942,7 +942,7 @@ class Publish:
         start_index = self.master_input.just_in
         end_index = self.master_input.just_out
         pad = self.master_input.pad
-        file_name  = self.master_input.scan_name
+        #file_name  = self.master_input.scan_name
         file_ext = self.master_input.ext
         sequence = pyseq.get_sequences(scan_path)
         if sequence[0].length() == 1 :
