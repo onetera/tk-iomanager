@@ -46,6 +46,11 @@ class Validate(object):
         timecode_in = MODEL_KEYS['timecode_in']
         timecode_out = MODEL_KEYS['timecode_out']
         for row in range(0,rows):
+
+            index = self.model.createIndex(row,0)
+            check = self.model.data(index,QtCore.Qt.CheckStateRole )
+            if check == QtCore.Qt.CheckState.Unchecked:
+                continue
             
             framerate = math.ceil(self._get_data(row,MODEL_KEYS['framerate']))
             mod_start_frame = self._get_data(row,MODEL_KEYS['start_frame'])
@@ -88,8 +93,12 @@ class Validate(object):
     def uploade_status(self):
         rows = self.model.rowCount(None)
         for row in range(0,rows):
+
+            index = self.model.createIndex(row,0)
+            check = self.model.data(index,QtCore.Qt.CheckStateRole )
+            if check == QtCore.Qt.CheckState.Unchecked:
+                continue
             version,date = self._get_version(row)
-            print date
             self._set_data(row,MODEL_KEYS['version'],version)
             self._set_data(row,MODEL_KEYS['date'],str(date))
     
@@ -98,6 +107,12 @@ class Validate(object):
         group_model = {}
 
         for row in range(0,self.model.rowCount(None)):
+
+            index = self.model.createIndex(row,0)
+            check = self.model.data(index,QtCore.Qt.CheckStateRole )
+            if check == QtCore.Qt.CheckState.Unchecked:
+                continue
+
             type_value = self._get_data(row,MODEL_KEYS['type'])
             if not type_value.find("src") ==  -1:
                 shot_name = self._get_data(row,MODEL_KEYS['shot_name'])

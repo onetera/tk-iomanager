@@ -168,7 +168,7 @@ def _get_thumbnail(seq):
         original_file = os.path.join(seq.dirname,
                                      seq.head()+seq.format("%p")%seq.start()+seq.tail())
         
-        thumbnail_path = os.path.join(seq.dirname,".thumbnail")
+        thumbnail_path = os.path.join(os.path.dirname(seq.dirname),".thumbnail")
         thumbnail_file = os.path.join(thumbnail_path,
                                      seq.head()+seq.format("%p")%seq.start()+".png")
         if not os.path.exists(thumbnail_path):
@@ -428,11 +428,22 @@ class ExcelWriteModel:
                 data = rWorksheet.cell_value( row, col )
                 if not data == "NaN":
                     if col == 1:
-                        path = rWorksheet.cell_value( row, 7 )
+                        ext = rWorksheet.cell_value(row,MODEL_KEYS['ext'])
+                        if ext in ['mov']:
+                            path = rWorksheet.cell_value( row, 7 )
+                        else:
+                            path = os.path.dirname(rWorksheet.cell_value( row, 7 ))
                         thumbnail_path = os.path.join(path,
                             ".thumbnail")
                         thumbnail_file = os.path.join(thumbnail_path,data)
                         info.append(thumbnail_file)
+                    elif col in [MODEL_KEYS["timecode_in"],MODEL_KEYS['timecode_out']]:
+                        if type(data) == float:
+                            data = "%08d"%int(data)
+                            temp = list(data)
+                            temp = [ temp[x]+temp[x+1] for x in range(0,len(temp)) if (x+1)%2 == 1 ]
+                            data = ":".join(temp)
+                        info.append(data)
                     else:
                         info.append(data)
                 else:

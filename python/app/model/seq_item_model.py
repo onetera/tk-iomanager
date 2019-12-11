@@ -1,5 +1,6 @@
 from sgtk.platform.qt import QtCore, QtGui
 from ..api.constant import *
+import os
 
 class SeqTableModel(QtCore.QAbstractTableModel):
     
@@ -37,9 +38,10 @@ class SeqTableModel(QtCore.QAbstractTableModel):
             else:
                 return QtCore.Qt.Unchecked
         elif role == QtCore.Qt.DecorationRole and index.column() == 1:
-            pixmap = QtGui.QPixmap(240,144)
-            pixmap.load(self.arraydata[index.row()][index.column()])
-            return pixmap
+            if os.path.exists(self.arraydata[index.row()][index.column()]):
+                pixmap = QtGui.QPixmap(240,144)
+                pixmap.load(self.arraydata[index.row()][index.column()])
+                return pixmap
 
     def flags(self, index):
         #if index.column() in [ 1,2,3,14,15,0 ]:
