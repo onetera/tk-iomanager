@@ -17,13 +17,19 @@ from edl import Parser
 
 class MOV_INFO:
 
-    def __init__(self,mov_file,event=None):
+    def __init__(self,mov_file,event=None,first_start=None):
 
         self.mov_file = mov_file
         self.event = event
+        self.first_start = first_start
         self.dirname = os.path.dirname(mov_file)
         self.scan_name = os.path.basename(mov_file)
         self.ext = "mov"
+
+
+    def master_frame(self):
+        start_frame = Timecode(round(self.framerate()),str(self.first_start.rec_start_tc)).frame_number
+        return start_frame
     
     @property
     def video_stream(self):
@@ -70,7 +76,7 @@ class MOV_INFO:
             
             mod_start_frame = Timecode(round(self.framerate()),self.master_timecode()).frame_number
             start_frame = Timecode(round(self.framerate()),start_timecode).frame_number
-            return start_frame - 86400 + 1
+            return start_frame - self.master_frame() + 1
         
         return 1
             
@@ -359,8 +365,9 @@ def _get_movs(path):
             parser = Parser(round(mov_info.framerate()))
             f = open(edl_file)
             dl = parser.parse(f)
+            first_start = dl[0]
             for event in dl:
-                mov_info = MOV_INFO(mov_file,event)
+                mov_info = MOV_INFO(mov_file,event,first_start)
                 movs.append(mov_info)    
             f.close()
         else:
