@@ -41,6 +41,7 @@ class SeqTableModel(QtCore.QAbstractTableModel):
             if os.path.exists(self.arraydata[index.row()][index.column()]):
                 pixmap = QtGui.QPixmap(240,144)
                 pixmap.load(self.arraydata[index.row()][index.column()])
+                pixmap = pixmap.scaled(240, 144)
                 return pixmap
 
     def flags(self, index):

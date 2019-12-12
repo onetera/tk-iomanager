@@ -17,9 +17,10 @@ from edl import Parser
 
 class MOV_INFO:
 
-    def __init__(self,mov_file,event=None,first_start=None):
+    def __init__(self,mov_file,video_stream=None,event=None,first_start=None):
 
         self.mov_file = mov_file
+        self.video_stream = video_stream
         self.event = event
         self.first_start = first_start
         self.dirname = os.path.dirname(mov_file)
@@ -31,9 +32,9 @@ class MOV_INFO:
         start_frame = Timecode(round(self.framerate()),str(self.first_start.rec_start_tc)).frame_number
         return start_frame
     
-    @property
-    def video_stream(self):
-        probe = ffmpeg.probe(self.mov_file)
+    @classmethod
+    def video_stream(self,mov_file):
+        probe = ffmpeg.probe(mov_file)
         video_stream = next((stream for stream in probe['streams'] 
                              if stream['codec_type'] == 'video'), None)
         
@@ -107,14 +108,55 @@ def create_excel(path):
     
     sequences = _get_sequences(path)
     movs = _get_movs(path)
+    _create_thumbnail_for_mov(movs)
     sequences = movs + sequences
     array = _create_seq_array(sequences)
     return array
+
+
+def _create_thumbnail_for_mov(movs):
+    
+    mov_jobs = {}
+
+    for mov in movs:
+        mov_file = os.path.join(mov.dirname,mov.scan_name)
+        if mov_jobs.has_key(mov_file):
+            mov_jobs[mov_file].append(mov)
+        else:
+            mov_jobs[mov_file] = [mov]
+
+    thumbnail_path = os.path.join(movs[0].dirname,".thumbnail")
+    if not os.path.exists(thumbnail_path):
+        os.makedirs(thumbnail_path)
+
+    for mov_file in mov_jobs:
+            
+        thumbnail_file = os.path.join(thumbnail_path,os.path.basename(mov_file).split(".")[0]+".%04d.png")
+        select_frames = ["eq(n\,{})".format(mov.start()) for mov in mov_jobs[mov_file]]
+        select_command ="+".join(select_frames)
+        
+        command = ['rez-env',"ffmpeg","--","ffmpeg","-y"]
+        command.append("-i")
+        command.append(mov_file)
+        command.append("-vf")
+        command.append("select='{}'".format(select_command))
+        #command.append("-vframes")
+        #command.append("{}".format(len(select_frames)))
+        command.append("-vsync")
+        command.append("0")
+        command.append("-s")
+        command.append("960x540")
+        command.append(thumbnail_file)
+
+        command = " ".join(command)
+        print command
+        os.system(command)
 
 def _create_seq_array(sequences):
         
     array = []
     for seq in sequences:
+        print "create dir seq info {}".format(seq.start())
         info = []
         info.insert(MODEL_KEYS['check'], QtGui.QCheckBox())
         info.insert(MODEL_KEYS['thumbnail'],_get_thumbnail(seq))
@@ -151,24 +193,27 @@ def _get_thumbnail(seq):
 
         mov_file = os.path.join(seq.dirname,seq.scan_name)
         thumbnail_path = os.path.join(seq.dirname,".thumbnail")
-        if not os.path.exists(thumbnail_path):
-            os.makedirs(thumbnail_path)
-        thumbnail_file = os.path.join(thumbnail_path,seq.scan_name.split(".")[0]+".%04d.png"%seq.start())
-        start_frame = seq.start()
+        #if not os.path.exists(thumbnail_path):
+        #    os.makedirs(thumbnail_path)
+        if seq.event:
+            thumbnail_file = os.path.join(thumbnail_path,seq.scan_name.split(".")[0]+".%04d.png"%int(seq.event.num))
+        else:
+            thumbnail_file = os.path.join(thumbnail_path,seq.scan_name.split(".")[0]+".0001.png")
+        #start_frame = seq.start()
 
-        command = ['rez-env',"ffmpeg","--","ffmpeg","-y"]
-        command.append("-i")
-        command.append(mov_file)
-        command.append("-vf")
-        command.append("select='gte(n\,{0})'".format(seq.start()-1))
-        command.append("-vframes")
-        command.append("1")
-        command.append("-s")
-        command.append("240x144")
-        command.append(thumbnail_file)
+        #command = ['rez-env',"ffmpeg","--","ffmpeg","-y"]
+        #command.append("-i")
+        #command.append(mov_file)
+        #command.append("-vf")
+        #command.append("select='gte(n\,{0})'".format(seq.start()-1))
+        #command.append("-vframes")
+        #command.append("1")
+        #command.append("-s")
+        #command.append("240x144")
+        #command.append(thumbnail_file)
 
-        command = " ".join(command)
-        os.system(command)
+        #command = " ".join(command)
+        #os.system(command)
         return thumbnail_file
     else:
         original_file = os.path.join(seq.dirname,
@@ -186,7 +231,7 @@ def _get_thumbnail(seq):
         command.append("linear")
         command.append("sRGB")
         command.append("--resize")
-        command.append("240x144")
+        command.append("960x540")
         command.append("-o")
         command.append(thumbnail_file)
 
@@ -218,7 +263,8 @@ def _get_time_code(seq,frame):
     if _get_ext(seq) == "mov":
 
         mov_file = os.path.join(seq.dirname,seq.head())
-        mov_info = MOV_INFO(mov_file)
+        video_stream = MOV_INFO.video_stream(mov_file)
+        mov_info = MOV_INFO(mov_file,video_stream)
         start_timecode = mov_info.video_stream['tags']['timecode']
         n ,d = mov_info.video_stream['r_frame_rate'].split("/")
         frame_rate = float(n) / float(d)
@@ -259,7 +305,8 @@ def _get_framerate(seq):
     if _get_ext(seq) == "mov":
 
         mov_file = os.path.join(seq.dirname,seq.head())
-        mov_info = MOV_INFO(mov_file)
+        video_stream = MOV_INFO.video_stream(mov_file)
+        mov_info = MOV_INFO(mov_file,video_stream)
         n ,d = mov_info.video_stream['r_frame_rate'].split("/")
         frame_rate = float(n) / float(d)
         return frame_rate
@@ -296,7 +343,8 @@ def _get_resolution(seq):
     if _get_ext(seq) == "mov":
 
         mov_file = os.path.join(seq.dirname,seq.head())
-        mov_info = MOV_INFO(mov_file)
+        video_stream = MOV_INFO.video_stream(mov_file)
+        mov_info = MOV_INFO(mov_file,video_stream)
         width  = mov_info.video_stream['width']
         height  = mov_info.video_stream['height']
         return "%d x %d"%(width,height)
@@ -360,18 +408,19 @@ def _get_movs(path):
     for mov_file in mov_files:
         
         edl_file = mov_file.replace(".mov",".edl")
-        mov_info = MOV_INFO(mov_file)
+        video_stream = MOV_INFO.video_stream(mov_file)
+        mov_info = MOV_INFO(mov_file,video_stream)
         if os.path.exists(edl_file):
             parser = Parser(round(mov_info.framerate()))
             f = open(edl_file)
             dl = parser.parse(f)
             first_start = dl[0]
             for event in dl:
-                mov_info = MOV_INFO(mov_file,event,first_start)
+                mov_info = MOV_INFO(mov_file,video_stream,event,first_start)
                 movs.append(mov_info)    
             f.close()
         else:
-            mov_info = MOV_INFO(mov_file)
+            mov_info = MOV_INFO(mov_file,video_stream)
             movs.append(mov_info)    
 
     return movs
@@ -485,7 +534,7 @@ class ExcelWriteModel:
                         #col = self.wWorksheet.col(1)
                         #col.width = 240
                         self.wWorksheet.set_row( row+1, 144 )   # 엑셀 높이설정 (썸네일크기 맞춰서)
-                        self.wWorksheet.insert_image( row+1, col,data,{'x_scale':1, 'y_scale': 1})
+                        self.wWorksheet.insert_image( row+1, col,data,{'x_scale':0.25, 'y_scale': 0.25})
 
                 except Exception as e :
                     print e
@@ -527,7 +576,7 @@ class ExcelWriteModel:
             col_size,rowsize = Image.open(img).size
             #self.wWorksheet.set_column( col, col, 20 )
             self.wWorksheet.set_row( row, 60 )   # 엑셀 높이설정 (썸네일크기 맞춰서)
-            self.wWorksheet.insert_image( row, col, img, {'x_scale': 1, 'y_scale': 1} )
+            self.wWorksheet.insert_image( row, col, img, {'x_scale': 0.00001, 'y_scale': 0.00001} )
 
     def insertData( self, row, col, string ):
         self.wWorksheet.write( row, col, string )
@@ -542,7 +591,8 @@ def get_time_code(dir_name,head,frame_format,frame,tail):
     if tail == "mov":
 
         mov_file = os.path.join(dir_name,head)
-        mov_info = MOV_INFO(mov_file)
+        video_stream = MOV_INFO.video_stream(mov_file)
+        mov_info = MOV_INFO(mov_file,video_stream)
         start_timecode = mov_info.video_stream['tags']['timecode']
         n ,d = mov_info.video_stream['r_frame_rate'].split("/")
         frame_rate = float(n) / float(d)
