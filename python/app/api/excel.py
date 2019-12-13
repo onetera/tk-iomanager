@@ -108,8 +108,9 @@ def create_excel(path):
     
     sequences = _get_sequences(path)
     movs = _get_movs(path)
-    _create_thumbnail_for_mov(movs)
-    sequences = movs + sequences
+    if movs:
+        _create_thumbnail_for_mov(movs)
+        sequences = movs + sequences
     array = _create_seq_array(sequences)
     return array
 
