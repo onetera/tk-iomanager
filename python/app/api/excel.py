@@ -30,6 +30,11 @@ class MOV_INFO:
 
     def master_frame(self):
         start_frame = Timecode(round(self.framerate()),str(self.first_start.rec_start_tc)).frame_number
+        if start_frame > 0 and start_frame < 86400:
+            return 0 
+        if start_frame > 86400:
+            return 86400
+
         return start_frame
     
     @classmethod
