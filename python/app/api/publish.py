@@ -276,6 +276,11 @@ class Publish:
 
                }
 
+        if self.master_input.retime_job:
+            frame_count = sum([x['retime_duration'] for x in self.master_input.retime_info ])
+            desc['sg_cut_out'] = 1000 + frame_count
+            desc['sg_cut_duration'] = frame_count
+
         self._sg.update("Shot",self.shot_ent['id'],desc)
     
     
