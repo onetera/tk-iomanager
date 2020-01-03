@@ -151,7 +151,7 @@ class MasterInput(object):
                 info['just_out'] = self._get_data(MODEL_KEYS['just_out'],row)
                 info['retime_start_frame'] = int(self._get_data(MODEL_KEYS['retime_start_frame'],row))
                 info['retime_duration'] = int(self._get_data(MODEL_KEYS['retime_duration'],row))
-                info['retime_percent'] = int(self._get_data(MODEL_KEYS['retime_percent'],row))
+                info['retime_percent'] = float(self._get_data(MODEL_KEYS['retime_percent'],row))
                 self.retime_info.append(info)
     
         
@@ -273,6 +273,7 @@ class Publish:
                 "sg_timecode_in": self.master_input.timecode_in,
                 "sg_timecode_out": self.master_input.timecode_out,
                 "sg_resolution": self.master_input.resolution,
+                "sg_clib_name": self.master_input.scan_name,
 
                }
 
@@ -673,6 +674,9 @@ class Publish:
                 nk += 'retime["speed"].setValue( {})\n'.format(float(info['retime_percent'])/100.0)
             nk += 'retime["filter"].setValue( "none" )\n'
             nk += 'retime["output.first_lock"].setValue( "true" )\n'
+            if not int(self.master_input.end_frame) == int(self.master_input.just_out):
+                nk += 'retime["input.last_lock"].setValue( "true" )\n'
+                nk += 'retime["input.last"].setValue({})\n'.format(int(self.master_input.just_out)-1)
             tg = 'retime'
             nk += 'output = "{}"\n'.format( org_path )
             nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n'% tg
@@ -681,7 +685,7 @@ class Publish:
                 nk += 'write["compression"].setValue("PIZ Wavelet (32 scanlines)")\n'
             nk += 'write["create_directories"].setValue(True)\n'
             nk += 'write["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
-            nk += 'write["frame"].setValue( "frame+1000+{}")\n'.format( int(info['retime_start_frame']-1))
+            nk += 'write["frame"].setValue( "frame+1000+{}")\n'.format( int(info['retime_start_frame']))
             nk += 'nuke.execute(write,1,{},1)\n'.format(int(info['retime_duration']))
         
         nk += 'exit()\n'
