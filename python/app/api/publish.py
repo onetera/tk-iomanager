@@ -667,7 +667,7 @@ class Publish:
             nk += 'retime = nuke.nodes.Retime(inputs = [%s])\n'% tg
             nk += 'retime["input.first_lock"].setValue( "true" )\n'
             #nk += 'retime["input.last_lock"].setValue( "true" )\n'
-            #nk += 'retime["input.last"].setValue({} )\n'.format(int(info['just_out']))
+            nk += 'retime["input.last"].setValue({} )\n'.format(int(self.master_input.end_frame))
             if int (info['retime_percent']) < 0:
                 nk += 'retime["reverse"].setValue( "true" )\n'
                 nk += 'retime["speed"].setValue( {})\n'.format(-float(info['retime_percent'])/100.0)
