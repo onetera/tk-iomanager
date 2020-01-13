@@ -661,7 +661,8 @@ class Publish:
             nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
             nk += 'read["first"].setValue( {} )\n'.format(int(self.master_input.start_frame))
             nk += 'read["last"].setValue( {} )\n'.format( int(self.master_input.end_frame))
-            nk += 'read["frame"].setValue( "frame+{}")\n'.format( int(info['just_in']-int(self.master_input.start_frame)))
+            #nk += 'read["frame"].setValue( "frame+{}")\n'.format( int(info['just_in']-int(self.master_input.start_frame)))
+            nk += 'read["frame"].setValue( "frame+{}")\n'.format( int(info['just_in']) - 1 )
             tg = 'read'
 
             nk += 'retime = nuke.nodes.Retime(inputs = [%s])\n'% tg
@@ -671,7 +672,8 @@ class Publish:
             if int (info['retime_percent']) < 0:
                 nk += 'retime["reverse"].setValue( "true" )\n'
                 nk += 'retime["speed"].setValue( {})\n'.format(-float(info['retime_percent'])/100.0)
-                nk += 'read["frame"].setValue( "frame-{}")\n'.format( int(info['just_in']- int(self.master_input.start_frame)))
+                #nk += 'read["frame"].setValue( "frame-{}")\n'.format( int(info['just_in']- int(self.master_input.start_frame)))
+                nk += 'read["frame"].setValue( "frame-{}")\n'.format( int(info['just_in'])-1 ) 
             else:
                 nk += 'retime["speed"].setValue( {})\n'.format(float(info['retime_percent'])/100.0)
             nk += 'retime["filter"].setValue( "none" )\n'

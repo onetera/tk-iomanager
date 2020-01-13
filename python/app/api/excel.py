@@ -137,7 +137,7 @@ def _create_thumbnail_for_mov(movs):
 
     for mov_file in mov_jobs:
             
-        thumbnail_file = os.path.join(thumbnail_path,os.path.basename(mov_file).split(".")[0]+".%04d.png")
+        thumbnail_file = os.path.join(thumbnail_path,os.path.basename(mov_file).split(".")[0]+".%04d.jpg")
         select_frames = ["eq(n\,{})".format(mov.start()) for mov in mov_jobs[mov_file]]
         select_command ="+".join(select_frames)
         
@@ -202,9 +202,9 @@ def _get_thumbnail(seq):
         #if not os.path.exists(thumbnail_path):
         #    os.makedirs(thumbnail_path)
         if seq.event:
-            thumbnail_file = os.path.join(thumbnail_path,seq.scan_name.split(".")[0]+".%04d.png"%int(seq.event.num))
+            thumbnail_file = os.path.join(thumbnail_path,seq.scan_name.split(".")[0]+".%04d.jpg"%int(seq.event.num))
         else:
-            thumbnail_file = os.path.join(thumbnail_path,seq.scan_name.split(".")[0]+".0001.png")
+            thumbnail_file = os.path.join(thumbnail_path,seq.scan_name.split(".")[0]+".0001.jpg")
         #start_frame = seq.start()
 
         #command = ['rez-env',"ffmpeg","--","ffmpeg","-y"]
@@ -227,7 +227,7 @@ def _get_thumbnail(seq):
         
         thumbnail_path = os.path.join(os.path.dirname(seq.dirname),".thumbnail")
         thumbnail_file = os.path.join(thumbnail_path,
-                                     seq.head()+seq.format("%p")%seq.start()+".png")
+                                     seq.head()+seq.format("%p")%seq.start()+".jpg")
         if not os.path.exists(thumbnail_path):
             os.makedirs(thumbnail_path)
 
