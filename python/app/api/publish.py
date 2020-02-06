@@ -518,6 +518,10 @@ class Publish:
         
         select_code = (int(self.master_input.just_out)-int(self.master_input.just_in)) / 30 
 
+        if self.master_input.retime_job:
+
+            select_code = sum([x['retime_duration'] for x in self.master_input.retime_info ]) / 30
+
         if select_code == 0:
             select_code = 1
 
