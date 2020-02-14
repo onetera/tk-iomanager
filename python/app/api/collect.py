@@ -66,6 +66,7 @@ class Collect:
         
         self.scan_colorspace = scan_colorspace
         
+        self.use_natron = False
         self.merge = merge
         self._app = sgtk.platform.current_bundle()
         self._sg = self._app.shotgun
@@ -114,6 +115,8 @@ class Collect:
                 cmd = ['rez-env','nuke','ocio_config','--','nuke','-ix',nuke_script]
             if not self.scan_colorspace.find("Alexa") == -1: 
                 cmd = ['rez-env','nuke','alexa_config','--','nuke','-ix',nuke_script]
+            if self.use_natron:
+                cmd = ['rez-env','natron','alexa_config','--','NatronRenderer','-t',nuke_script]
             command = author.Command(argv=cmd)
             task.addCommand(command)
             self.job.addChild(task)
@@ -191,23 +194,52 @@ class Collect:
             just_in = self._get_data(MODEL_KEYS['just_in'],row)
             just_out = self._get_data(MODEL_KEYS['just_out'],row)
             framerate = self._get_data(MODEL_KEYS['framerate'],row)
+            print "-----------------"
+            print "-----------------setting.mov_codec setting.mov_codec setting.mov_codec "
+            print "-----------------setting.mov_codec setting.mov_codec setting.mov_codec "
+            print "-----------------setting.mov_codec setting.mov_codec setting.mov_codec "
+            print "-----------------setting.mov_codec setting.mov_codec setting.mov_codec "
+            print setting.mov_codec 
+            if setting.mov_codec == "apch":
 
-            nk = ''
-            nk += 'import nuke\n'
-            nk += 'read = nuke.nodes.Read( file="{}" )\n'.format( scan_path )
-            nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
-            nk += 'read["first"].setValue( {} )\n'.format(int(just_in))
-            nk += 'read["last"].setValue( {} )\n'.format( int(just_out))
-            tg = 'read'
-            nk += 'output = "{}"\n'.format( out_path )
-            nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n'% tg
-            nk += 'write["file_type"].setValue( "mov" )\n'
-            nk += 'write["create_directories"].setValue(True)\n'
-            nk += 'write["mov64_codec"].setValue( "{}")\n'.format(setting.mov_codec)
-            nk += 'write["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
-            nk += 'write["mov64_fps"].setValue({})\n'.format(framerate)
-            nk += 'nuke.execute(write,{0},{1},1)\n'.format(int(just_in),int(just_out))
-            nk += 'exit()\n'
+                self.use_natron = True
+
+                nk = ''
+                nk += 'from NatronEngine import *\n'
+                nk += 'read = app.createReader("{}")\n'.format(scan_path)
+                nk += 'read.getParam("ocioInputSpace").setValue("color_picking")\n'
+                nk += 'read.getParam("ocioOutputSpaceIndex").setValue(1)\n'
+                nk += 'read.getParam("firstFrame").setValue({})\n'.format(int(just_in))
+                nk += 'read.getParam("lastFrame").setValue({})\n'.format(int(just_out))
+                nk += 'write = app.createWriter("{}")\n'.format(out_path)
+                nk += 'write.connectInput(0,read)\n'
+                nk += 'write.getParam("ocioInputSpace").setValue("color_picking")\n'
+                nk += 'write.getParam("ocioOutputSpaceIndex").setValue(1)\n'
+                nk += 'write.getParam("frameRange").setValue(0)\n'
+                nk += 'write.getParam("format").setValue(5)\n'
+                nk += 'write.getParam("codec").setValue(1)\n'
+                nk += 'write.getParam("fps").setValue({})\n'.format(framerate)
+                nk += 'app.render(write,{0},{1})\n'.format(int(just_in),int(just_out))
+                nk += 'app.render(write,{0},{1})\n'.format(int(just_in),int(just_out))
+                nk += 'exit()\n'
+            else:
+
+                nk = ''
+                nk += 'import nuke\n'
+                nk += 'read = nuke.nodes.Read( file="{}" )\n'.format( scan_path )
+                nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
+                nk += 'read["first"].setValue( {} )\n'.format(int(just_in))
+                nk += 'read["last"].setValue( {} )\n'.format( int(just_out))
+                tg = 'read'
+                nk += 'output = "{}"\n'.format( out_path )
+                nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n'% tg
+                nk += 'write["file_type"].setValue( "mov" )\n'
+                nk += 'write["create_directories"].setValue(True)\n'
+                nk += 'write["mov64_codec"].setValue( "{}")\n'.format(setting.mov_codec)
+                nk += 'write["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
+                nk += 'write["mov64_fps"].setValue({})\n'.format(framerate)
+                nk += 'nuke.execute(write,{0},{1},1)\n'.format(int(just_in),int(just_out))
+                nk += 'exit()\n'
 
 
             if not os.path.exists( os.path.dirname(tmp_nuke_script_file) ):
@@ -250,23 +282,45 @@ class Collect:
         just_in = self._get_data(MODEL_KEYS['just_in'],self.rows[0])
         just_out = self._get_data(MODEL_KEYS['just_out'],self.rows[-1])
         framerate = self._get_data(MODEL_KEYS['framerate'],self.rows[0])
+        if setting.mov_codec == "apch":
 
-        nk = ''
-        nk += 'import nuke\n'
-        nk += 'read = nuke.nodes.Read( file="{}" )\n'.format( scan_path )
-        nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
-        nk += 'read["first"].setValue( {} )\n'.format(int(just_in))
-        nk += 'read["last"].setValue( {} )\n'.format( int(just_out))
-        tg = 'read'
-        nk += 'output = "{}"\n'.format( out_path )
-        nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n'% tg
-        nk += 'write["file_type"].setValue( "mov" )\n'
-        nk += 'write["create_directories"].setValue(True)\n'
-        nk += 'write["mov64_codec"].setValue( "{}")\n'.format(setting.mov_codec)
-        nk += 'write["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
-        nk += 'write["mov64_fps"].setValue({})\n'.format(framerate)
-        nk += 'nuke.execute(write,{0},{1},1)\n'.format(int(just_in),int(just_out))
-        nk += 'exit()\n'
+            self.use_natron = True
+
+            nk = ''
+            nk += 'from NatronEngine import *\n'
+            nk += 'read = app.createReader("{}")\n'.format(scan_path)
+            nk += 'read.getParam("ocioInputSpace").setValue("color_picking")\n'
+            nk += 'read.getParam("ocioOutputSpaceIndex").setValue(1)\n'
+            nk += 'read.getParam("firstFrame").setValue({})\n'.format(int(just_in))
+            nk += 'read.getParam("lastFrame").setValue({})\n'.format(int(just_out))
+            nk += 'write = app.createWriter("{}")\n'.format(out_path)
+            nk += 'write.connectInput(0,read)\n'
+            nk += 'write.getParam("ocioInputSpace").setValue("color_picking")\n'
+            nk += 'write.getParam("ocioOutputSpaceIndex").setValue(1)\n'
+            nk += 'write.getParam("frameRange").setValue(0)\n'
+            nk += 'write.getParam("format").setValue(5)\n'
+            nk += 'write.getParam("codec").setValue(1)\n'
+            nk += 'write.getParam("fps").setValue({})\n'.format(framerate)
+            nk += 'app.render(write,{0},{1})\n'.format(int(just_in),int(just_out))
+            nk += 'app.render(write,{0},{1})\n'.format(int(just_in),int(just_out))
+            nk += 'exit()\n'
+        else:
+            nk = ''
+            nk += 'import nuke\n'
+            nk += 'read = nuke.nodes.Read( file="{}" )\n'.format( scan_path )
+            nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
+            nk += 'read["first"].setValue( {} )\n'.format(int(just_in))
+            nk += 'read["last"].setValue( {} )\n'.format( int(just_out))
+            tg = 'read'
+            nk += 'output = "{}"\n'.format( out_path )
+            nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n'% tg
+            nk += 'write["file_type"].setValue( "mov" )\n'
+            nk += 'write["create_directories"].setValue(True)\n'
+            nk += 'write["mov64_codec"].setValue( "{}")\n'.format(setting.mov_codec)
+            nk += 'write["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
+            nk += 'write["mov64_fps"].setValue({})\n'.format(framerate)
+            nk += 'nuke.execute(write,{0},{1},1)\n'.format(int(just_in),int(just_out))
+            nk += 'exit()\n'
 
 
         if not os.path.exists( os.path.dirname(tmp_nuke_script_file) ):
