@@ -282,6 +282,8 @@ class Publish:
             frame_count = sum([x['retime_duration'] for x in self.master_input.retime_info ])
             desc['sg_cut_out'] = 1000 + frame_count
             desc['sg_cut_duration'] = frame_count
+            desc['sg_retime_duration'] = "\n".join([str(x['retime_duration']) for x in self.master_input.retime_info ])
+            desc['sg_retime_percent'] = "%\n".join([str(x['retime_percent']) for x in self.master_input.retime_info ]) + "%"
 
         self._sg.update("Shot",self.shot_ent['id'],desc)
     
