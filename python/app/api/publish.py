@@ -397,6 +397,8 @@ class Publish:
         
         if self.seq_type == "org":
             version_type = "org"
+        elif self.seq_type == "ref":
+            version_type = "ref"
         else:
             version_type = "src"
 
@@ -1046,6 +1048,9 @@ class Publish:
         if self.seq_type == "org":
             key  = [['code','is','Plate']]
             return self._sg.find_one("PublishedFileType",key,['id'])
+        elif self.seq_type == "ref":
+            key  = [['code','is','Referrence']]
+            return self._sg.find_one("PublishedFileType",key,['id'])
         else:
             key  = [['code','is','Source']]
             return self._sg.find_one("PublishedFileType",key,['id'])
@@ -1143,6 +1148,8 @@ class Publish:
 
         if self.seq_type == "org":
             published_type = "Plate"
+        elif self.seq_type == "ref":
+            published_type = "Reference"
         else:
             published_type = "Source"
             
