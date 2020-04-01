@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import glob
+import re
 import os
 import sys
 import xlsxwriter
@@ -365,8 +366,19 @@ def _get_resolution(seq):
     elif seq.tail() == ".dpx":
         dpx_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
         dpx = pydpx_meta.DpxHeader(dpx_file)
-        return '%d x %d'%(dpx.raw_header.OrientHeader.XOriginalSize,
-                          dpx.raw_header.OrientHeader.YOriginalSize)
+
+        width = dpx.raw_header.OrientHeader.XOriginalSize
+        height = dpx.raw_header.OrientHeader.YOriginalSize
+        if width == 0:
+            from subprocess import check_output
+            dpx_info = check_output(["rez-env", "oiio","--","iinfo",dpx_file])
+            resolution_info = re.search("\d+\ x\ \d+",dpx_info)
+            if resolution_info :
+                width,height = resolution_info.group().split("x")
+                width = int(width)
+                height = int(height)
+        return '%d x %d'%(width,height)
+
     elif seq.tail() in [ '.jpg','.jpeg']:
         jpg_file = os.path.join(seq.dirname,seq.head()+seq.format("%p")%seq.start()+seq.tail())
         jpeg = Image.open(jpg_file)
@@ -376,8 +388,17 @@ def _get_resolution(seq):
         if tail == "dpx":
             dpx_file = os.path.join(seq.dirname,seq.head())
             dpx = pydpx_meta.DpxHeader(dpx_file)
-            return '%d x %d'%(dpx.raw_header.OrientHeader.XOriginalSize,
-                            dpx.raw_header.OrientHeader.YOriginalSize)
+            width = dpx.raw_header.OrientHeader.XOriginalSize
+            height = dpx.raw_header.OrientHeader.YOriginalSize
+            if width == 0:
+                from subprocess import check_output
+                dpx_info = check_output(["rez-env", "oiio","--","iinfo",dpx_file])
+                resolution_info = re.search("\d+\ x\ \d+",dpx_info)
+                if resolution_info :
+                    width,height = resolution_info.group().split("x")
+                    width = int(width)
+                    height = int(height)
+            return '%d x %d'%(width,height)
         elif tail == "exr":
             exr_file = os.path.join(seq.dirname,seq.head())
             exr = OpenEXR.InputFile(exr_file)
