@@ -292,22 +292,22 @@ class Publish:
     def create_org_job(self):
         if self.master_input.retime_job:
             self.org_task = author.Task(title = "create org")
-            cmd = ['rez-env','nuke','--','nuke','-ix',self.nuke_retime_script]
+            cmd = ['rez-env','nuke-11','--','nuke','-ix',self.nuke_retime_script]
             if not self.scan_colorspace.find("ACES") == -1: 
-                cmd = ['rez-env','nuke','ocio_config','--','nuke','-ix',self.nuke_retime_script]
+                cmd = ['rez-env','nuke-11','ocio_config','--','nuke','-ix',self.nuke_retime_script]
             if not self.scan_colorspace.find("Alexa") == -1: 
-                cmd = ['rez-env','nuke','alexa_config','--','nuke','-ix',self.nuke_retime_script]
+                cmd = ['rez-env','nuke-11','alexa_config','--','nuke','-ix',self.nuke_retime_script]
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
             self.jpg_task.addChild(self.org_task)
 
         elif self.nuke_mov_script:
             self.org_task = author.Task(title = "create mov")
-            cmd = ['rez-env','nuke','--','nuke','-ix',self.nuke_mov_script]
+            cmd = ['rez-env','nuke-11','--','nuke','-ix',self.nuke_mov_script]
             if not self.scan_colorspace.find("ACES") == -1: 
-                cmd = ['rez-env','nuke','ocio_config','--','nuke','-ix',self.nuke_mov_script]
+                cmd = ['rez-env','nuke-11','ocio_config','--','nuke','-ix',self.nuke_mov_script]
             if not self.scan_colorspace.find("Alexa") == -1: 
-                cmd = ['rez-env','nuke','alexa_config','--','nuke','-ix',self.nuke_mov_script]
+                cmd = ['rez-env','nuke-11','alexa_config','--','nuke','-ix',self.nuke_mov_script]
             if self.use_natron:
                 cmd = ['rez-env','natron','alexa_config','--','NatronRenderer','-t',self.nuke_mov_script]
             command = author.Command(argv=cmd)
@@ -445,11 +445,11 @@ class Publish:
 
 
         self.jpg_task = author.Task(title = "render jpg")
-        cmd = ['rez-env','nuke','--','nuke','-ix',self.nuke_script]
+        cmd = ['rez-env','nuke-11','--','nuke','-ix',self.nuke_script]
         if not self.scan_colorspace.find("ACES") == -1: 
-            cmd = ['rez-env','nuke','ocio_config','--','nuke','-ix',self.nuke_script]
+            cmd = ['rez-env','nuke-11','ocio_config','--','nuke','-ix',self.nuke_script]
         if not self.scan_colorspace.find("Alexa") == -1: 
-            cmd = ['rez-env','nuke','alexa_config','--','nuke','-ix',self.nuke_script]
+            cmd = ['rez-env','nuke-11','alexa_config','--','nuke','-ix',self.nuke_script]
         if self.master_input.ext == "mov":
             cmd = ["echo","'pass'"]
 
