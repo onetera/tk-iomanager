@@ -531,6 +531,8 @@ class Publish:
 
         if select_code == 0:
             select_code = 1
+    
+        date_text = "drawtext='fontfile=/westworld/inhouse/ww_font/Vera.ttf:text=\%{localtime \\\: 2020-\%m-\%d }:fontcolor=white:fontsize=250:box=1:boxcolor=black@0.5:boxborderw=5'"
 
         command = ['rez-env',"ffmpeg","--","ffmpeg","-y"]
         command.append("-r")
@@ -538,7 +540,7 @@ class Publish:
         command.append("-i")
         command.append(mov_path)
         command.append("-vf")
-        command.append("select='gte(n\,{0})*not(mod(n\,{0}))'".format(select_code))
+        command.append("select='gte(n\,{0})*not(mod(n\,{0}))',{1}".format(select_code,date_text))
         command.append("-vsync")
         command.append("0")
         command.append("-f")
