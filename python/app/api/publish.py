@@ -427,6 +427,7 @@ class Publish:
                 'entity' : self.shot_ent,
                 "sg_path_to_movie" : mov_path,
                 "sg_path_to_frames" : read_path,
+                "sg_first_frame" : 1 ,
                 "sg_version_type" : version_type,
                 "sg_scan_colorspace" : self.scan_colorspace
                 }
