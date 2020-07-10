@@ -71,7 +71,11 @@ class AppDialog(QtGui.QWidget):
         self.ui.check_all_btn.clicked.connect(self._check_all)
         self.ui.uncheck_all_btn.clicked.connect(self._uncheck_all)
         self.ui.edit_excel.clicked.connect(self._open_excel)
-        self.ui.validate_excel.clicked.connect(self._validate)
+        #self.ui.validate_excel.clicked.connect(self._validate)
+        self.ui.v_timecode.clicked.connect(lambda: self._validate("timecode"))
+        self.ui.v_org.clicked.connect(lambda: self._validate("org"))
+        self.ui.v_src.clicked.connect(lambda: self._validate("src"))
+        self.ui.v_editor.clicked.connect(lambda: self._validate("editor"))
         self.ui.edit_excel.setEnabled(False)
     
     
@@ -91,14 +95,18 @@ class AppDialog(QtGui.QWidget):
         self.ui.colorspace_combo.setCurrentIndex(
             self.ui.colorspace_combo.findText(colorspace))
 
-    def _validate(self):
+    def _validate(self,command):
         
         model = self.ui.seq_model_view.model()
         v  = validate.Validate(model)
-
-        v.timecode()
-        v.uploade_status()
-        v.check_src_version()
+        if command == "timecode":
+            v.timecode()
+        if command == "org":
+            v.uploade_status()
+        if command == "src":
+            v.check_src_version()
+        if command == "editor":
+            v.check_editor_shot()
         #self._save_excel()
 
     def _open_excel(self):

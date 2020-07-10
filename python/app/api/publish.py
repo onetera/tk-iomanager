@@ -75,6 +75,7 @@ class MasterInput(object):
         self.entity_name = self._get_data(MODEL_KEYS[self.entity_type])
         self.scan_path = self._get_data(MODEL_KEYS['scan_path'])
         self.scan_name = self._get_data(MODEL_KEYS['scan_name'])
+        self.clip_name = self._get_data(MODEL_KEYS['clip_name'])
         self.version = int(self._get_data(MODEL_KEYS['version']))
         self.pad = self._get_data(MODEL_KEYS['pad'])
         self.ext = self._get_data(MODEL_KEYS['ext'])
@@ -274,7 +275,7 @@ class Publish:
                 "sg_timecode_in": self.master_input.timecode_in,
                 "sg_timecode_out": self.master_input.timecode_out,
                 "sg_resolution": self.master_input.resolution,
-                "sg_clib_name": self.master_input.scan_name,
+                "sg_clib_name": self.master_input.clip_name,
 
                }
 
@@ -399,6 +400,8 @@ class Publish:
             version_type = "org"
         elif self.seq_type == "ref":
             version_type = "ref"
+        elif self.seq_type == "editor":
+            version_type = "editor"
         else:
             version_type = "src"
 

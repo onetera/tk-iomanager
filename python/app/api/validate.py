@@ -129,7 +129,32 @@ class Validate(object):
                 version = self._get_data(row,MODEL_KEYS['version'])
                 self._set_data(row,MODEL_KEYS['version'],int(version)+add_value)
                 add_value += 1
+    
+    def check_editor_shot(self):
 
+        for row in range(0,self.model.rowCount(None)):
+
+            index = self.model.createIndex(row,0)
+            check = self.model.data(index,QtCore.Qt.CheckStateRole )
+            if check == QtCore.Qt.CheckState.Unchecked:
+                continue
+
+            type_value = self._get_data(row,MODEL_KEYS['type'])
+            if type_value == "editor":
+                clibname = self._get_data(row,MODEL_KEYS['clip_name']) 
+                start_tc = self._get_data(row,MODEL_KEYS['timecode_in'])
+                filter_shot = [
+                    ['sg_clib_name','is',clibname.split(".")[0]+"."],
+                    #['project','is',{"id":124,'type':"Project"}],
+                    ['project','is',self.project],
+                    ['sg_timecode_in','is',start_tc]
+                    ]
+
+                shot_ent = self._sg.find_one("Shot",filter_shot,['code','sg_sequence'])
+                if shot_ent:
+                    print shot_ent
+                    self._set_data(row,MODEL_KEYS['seq_name'],shot_ent['sg_sequence']['name'])
+                    self._set_data(row,MODEL_KEYS['shot_name'],shot_ent['code'])
 
 
     def _get_version(self,row):

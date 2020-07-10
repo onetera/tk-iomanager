@@ -16,9 +16,18 @@ import ffmpeg
 from timecode import Timecode
 from edl import Parser
 
+class CutItem(object):
+
+    def __init__(self,parent=None):
+        self.start_tc = ""
+        self.end_tc = ""
+        self.rec_start_tc = ""
+        self.rec_end_tc = ""
+        self.clibname = ""
+
 class MOV_INFO:
 
-    def __init__(self,mov_file,video_stream=None,event=None,first_start=None):
+    def __init__(self,mov_file,video_stream=None,event=None,first_start=None,clip_name=None,cutitem = None):
 
         self.mov_file = mov_file
         self.video_stream = video_stream
@@ -26,6 +35,15 @@ class MOV_INFO:
         self.first_start = first_start
         self.dirname = os.path.dirname(mov_file)
         self.scan_name = os.path.basename(mov_file)
+        if clip_name:
+            clip_name = clip_name.split(".")
+            if len(clip_name) > 1:
+                self.clip_name = clip_name[0] + "."
+            else:
+                self.clip_name = clip_name[0]
+        else:
+            self.clip_name = "None"
+        self.cutitem = cutitem
         self.ext = "mov"
 
 
@@ -50,8 +68,10 @@ class MOV_INFO:
         return None
     
     def master_timecode(self):
-
-        start_timecode = self.video_stream['tags']['timecode']
+        if self.video_stream['tags'].has_key("timecode"):
+            start_timecode = self.video_stream['tags']['timecode']
+        else:
+            start_timecode = "00:00:00:00"
         start_timecode = Timecode(round(self.framerate()),str(start_timecode))
         return str(start_timecode)
 
@@ -126,11 +146,11 @@ def _create_thumbnail_for_mov(movs):
     mov_jobs = {}
 
     for mov in movs:
-        mov_file = os.path.join(mov.dirname,mov.scan_name)
-        if mov_jobs.has_key(mov_file):
-            mov_jobs[mov_file].append(mov)
+        mov_key = os.path.join(mov.dirname,mov.scan_name)
+        if mov_jobs.has_key(mov_key):
+            mov_jobs[mov_key].append(mov)
         else:
-            mov_jobs[mov_file] = [mov]
+            mov_jobs[mov_key] = [mov]
 
     thumbnail_path = os.path.join(movs[0].dirname,".thumbnail")
     if not os.path.exists(thumbnail_path):
@@ -138,8 +158,11 @@ def _create_thumbnail_for_mov(movs):
 
     for mov_file in mov_jobs:
             
-        thumbnail_file = os.path.join(thumbnail_path,os.path.basename(mov_file).split(".")[0]+".%04d.jpg")
-        select_frames = ["eq(n\,{})".format(mov.start()) for mov in mov_jobs[mov_file]]
+        thumbnail_file = os.path.join(thumbnail_path,mov.scan_name.split(".")[0]+".%04d.jpg")
+        select_frames = [ mov.start() for mov in mov_jobs[mov_file]]
+        select_frames = list(set(select_frames))
+        select_frames.sort()
+        select_frames = ["eq(n\,{})".format(frame) for frame in select_frames]
         select_command ="+".join(select_frames)
         
         command = ['rez-env',"ffmpeg","--","ffmpeg","-y"]
@@ -166,7 +189,7 @@ def _create_seq_array(sequences):
         print "create dir seq info {}".format(seq.start())
         info = []
         info.insert(MODEL_KEYS['check'], QtGui.QCheckBox())
-        info.insert(MODEL_KEYS['thumbnail'],_get_thumbnail(seq))
+        info.insert(MODEL_KEYS['thumbnail'],_get_thumbnail(seq,sequences))
         info.insert(MODEL_KEYS['roll'],"")
         info.insert(MODEL_KEYS['seq_name'],"")
         info.insert(MODEL_KEYS['shot_name'], "")
@@ -174,6 +197,10 @@ def _create_seq_array(sequences):
         info.insert(MODEL_KEYS['type'], "org")
         info.insert(MODEL_KEYS['scan_path'], seq.dirname)
         info.insert(MODEL_KEYS['scan_name'], seq.head())
+        if _get_ext(seq) == "mov":
+            info.insert(MODEL_KEYS['clip_name'], seq.clip_name)
+        else:
+            info.insert(MODEL_KEYS['clip_name'], seq.head())
         info.insert(MODEL_KEYS['pad'],seq.format('%p'))
         info.insert(MODEL_KEYS['ext'],_get_ext(seq))
         info.insert(MODEL_KEYS['resolution'] , _get_resolution(seq))
@@ -183,8 +210,16 @@ def _create_seq_array(sequences):
         info.insert(MODEL_KEYS['retime_duration'],None)
         info.insert(MODEL_KEYS['retime_percent'],None)
         info.insert(MODEL_KEYS["retime_start_frame"],None)
-        info.insert(MODEL_KEYS['timecode_in'], _get_time_code(seq,_get_start(seq)))
-        info.insert(MODEL_KEYS['timecode_out'],_get_time_code(seq,_get_end(seq)))
+        if _get_ext(seq) == "mov":
+            if seq.cutitem:
+                info.insert(MODEL_KEYS['timecode_in'],str(seq.cutitem.start_tc))
+                info.insert(MODEL_KEYS['timecode_out'],str(seq.cutitem.end_tc))
+            else:
+                info.insert(MODEL_KEYS['timecode_in'], _get_time_code(seq,_get_start(seq)))
+                info.insert(MODEL_KEYS['timecode_out'],_get_time_code(seq,_get_end(seq)))
+        else:
+            info.insert(MODEL_KEYS['timecode_in'], _get_time_code(seq,_get_start(seq)))
+            info.insert(MODEL_KEYS['timecode_out'],_get_time_code(seq,_get_end(seq)))
         info.insert(MODEL_KEYS['just_in'],_get_start(seq))
         info.insert(MODEL_KEYS['just_out'], _get_end(seq))
         info.insert(MODEL_KEYS['framerate'] ,_get_framerate(seq))
@@ -194,16 +229,24 @@ def _create_seq_array(sequences):
     return array
 
 
-def _get_thumbnail(seq):
+def _get_thumbnail(seq,sequences):
+    
+    
 
     if _get_ext(seq)== "mov":
+        
+        
+        index_search =  [ x.start() for x in sequences ]
+        index_search = list(set(index_search))
+        index_search.sort()
+        index = index_search.index(seq.start()) + 1
 
         mov_file = os.path.join(seq.dirname,seq.scan_name)
         thumbnail_path = os.path.join(seq.dirname,".thumbnail")
         #if not os.path.exists(thumbnail_path):
         #    os.makedirs(thumbnail_path)
         if seq.event:
-            thumbnail_file = os.path.join(thumbnail_path,seq.scan_name.split(".")[0]+".%04d.jpg"%int(seq.event.num))
+            thumbnail_file = os.path.join(thumbnail_path,seq.scan_name.split(".")[0]+".%04d.jpg"%index)
         else:
             thumbnail_file = os.path.join(thumbnail_path,seq.scan_name.split(".")[0]+".0001.jpg")
         #start_frame = seq.start()
@@ -263,7 +306,7 @@ def _get_end(seq):
 
 def _get_ext(seq):
     if not seq.tail():
-        return seq.head().split(".")[-1]
+        return seq.mov_file.split(".")[-1]
     return seq.tail().split(".")[-1]
 
 def _get_time_code(seq,frame):
@@ -272,7 +315,10 @@ def _get_time_code(seq,frame):
         mov_file = os.path.join(seq.dirname,seq.head())
         video_stream = MOV_INFO.video_stream(mov_file)
         mov_info = MOV_INFO(mov_file,video_stream)
-        start_timecode = mov_info.video_stream['tags']['timecode']
+        if mov_info.video_stream['tags'].has_key('timecode'):
+            start_timecode = mov_info.video_stream['tags']['timecode']
+        else:
+            start_timecode = "00:00:00:00"
         n ,d = mov_info.video_stream['r_frame_rate'].split("/")
         frame_rate = float(n) / float(d)
         start_timecode = Timecode(round(frame_rate),str(start_timecode))
@@ -434,18 +480,28 @@ def _get_movs(path):
     
     for mov_file in mov_files:
         
-        edl_file = mov_file.replace(".mov",".edl")
         video_stream = MOV_INFO.video_stream(mov_file)
         mov_info = MOV_INFO(mov_file,video_stream)
-        if os.path.exists(edl_file):
-            parser = Parser(round(mov_info.framerate()))
-            f = open(edl_file)
-            dl = parser.parse(f)
-            first_start = dl[0]
-            for event in dl:
-                mov_info = MOV_INFO(mov_file,video_stream,event,first_start)
-                movs.append(mov_info)    
-            f.close()
+        mov_name = mov_file.split(".")[0]
+        edl_files = glob.glob(mov_name + "*.edl")
+        if edl_files:
+            for edl_file in edl_files:
+                if os.path.exists(edl_file):
+                    parser = Parser(round(mov_info.framerate()))
+                    f = open(edl_file)
+                    dl = parser.parse(f)
+                    first_start = dl[0]
+                    for event in dl:
+
+                        cutitem = CutItem()
+                        cutitem.clibname = event.clip_name
+                        cutitem.start_tc = event.src_start_tc
+                        cutitem.end_tc = event.src_end_tc
+                        cutitem.rec_start_tc = event.rec_start_tc
+                        cutitem.rec_end_tc = event.rec_end_tc
+                        mov_info = MOV_INFO(mov_file,video_stream,event,first_start,event.clip_name,cutitem)
+                        movs.append(mov_info)    
+                    f.close()
         else:
             mov_info = MOV_INFO(mov_file,video_stream)
             movs.append(mov_info)    
