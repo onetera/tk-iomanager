@@ -158,11 +158,14 @@ def _create_thumbnail_for_mov(movs):
 
     for mov_file in mov_jobs:
             
-        thumbnail_file = os.path.join(thumbnail_path,mov.scan_name.split(".")[0]+".%04d.jpg")
+        thumbnail_file = os.path.join(thumbnail_path,os.path.basename(mov_file).split(".")[0]+".%04d.jpg")
         select_frames = [ mov.start() for mov in mov_jobs[mov_file]]
         select_frames = list(set(select_frames))
         select_frames.sort()
         select_frames = ["eq(n\,{})".format(frame) for frame in select_frames]
+        print len(select_frames)
+        print len(select_frames)
+        print len(select_frames)
         select_command ="+".join(select_frames)
         
         command = ['rez-env',"ffmpeg","--","ffmpeg","-y"]
@@ -233,9 +236,11 @@ def _get_thumbnail(seq,sequences):
     
     
 
+
     if _get_ext(seq)== "mov":
         
         
+
         index_search =  [ x.start() for x in sequences ]
         index_search = list(set(index_search))
         index_search.sort()
@@ -484,6 +489,7 @@ def _get_movs(path):
         mov_info = MOV_INFO(mov_file,video_stream)
         mov_name = mov_file.split(".")[0]
         edl_files = glob.glob(mov_name + "*.edl")
+        print edl_files
         if edl_files:
             for edl_file in edl_files:
                 if os.path.exists(edl_file):
