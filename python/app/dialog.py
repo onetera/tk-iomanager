@@ -112,7 +112,7 @@ class AppDialog(QtGui.QWidget):
     def _open_excel(self):
         excel_file = self.ui.excel_file_label.text()
         #command = ['libreoffice5.4','--calc','--nologo']
-        command = ['wps']
+        command = ['et']
         command.append(excel_file)
         subprocess.Popen(command)
     
