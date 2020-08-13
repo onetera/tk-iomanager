@@ -198,10 +198,9 @@ class Publish:
         self.create_rm_job()
         self.create_sg_job()
         self.convert_mp4_job()
-        self.create_jpg_job()
+        self.create_img_job()
         self.create_org_job()
         self.submit_job()
-
 
         
     @property
@@ -300,20 +299,20 @@ class Publish:
                 cmd = ['rez-env','nuke-11','alexa_config','--','nuke','-ix',self.nuke_retime_script]
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
-            self.jpg_task.addChild(self.org_task)
+            self.img_task.addChild(self.org_task)
 
         elif self.nuke_mov_script:
             self.org_task = author.Task(title = "create mov")
             cmd = ['rez-env','nuke-11','--','nuke','-ix',self.nuke_mov_script]
-            if not self.scan_colorspace.find("ACES") == -1: 
+            if not self.scan_colorspace.find("ACES") == -1:
                 cmd = ['rez-env','nuke-11','ocio_config','--','nuke','-ix',self.nuke_mov_script]
-            if not self.scan_colorspace.find("Alexa") == -1: 
+            if not self.scan_colorspace.find("Alexa") == -1:
                 cmd = ['rez-env','nuke-11','alexa_config','--','nuke','-ix',self.nuke_mov_script]
             if self.use_natron:
                 cmd = ['rez-env','natron','alexa_config','--','NatronRenderer','-t',self.nuke_mov_script]
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
-            self.jpg_task.addChild(self.org_task)
+            self.img_task.addChild(self.org_task)
         else:
             self.create_copy_job()
     
@@ -374,7 +373,7 @@ class Publish:
         #cmd = ["/bin/sh",self.copy_script]
         #command = author.Command(argv=cmd)
         #self.copy_task.addCommand(command)
-        #self.jpg_task.addChild(self.copy_task)
+        #self.img_task.addChild(self.copy_task)
 
         scan_path = self.master_input.scan_path
         file_ext = self.master_input.ext
@@ -392,7 +391,7 @@ class Publish:
             command = author.Command(argv=cmd)
             self.copy_task.addCommand(command)
         
-        self.jpg_task.addChild(self.copy_task)
+        self.img_task.addChild(self.copy_task)
     
     def create_version(self):
         
@@ -443,12 +442,13 @@ class Publish:
         self.version_ent = self._sg.create("Version",desc)
 
         return
-    
-    def create_jpg_job(self):
-        
 
-
-        self.jpg_task = author.Task(title = "render jpg")
+    def create_img_job(self):
+        if self.file_ext == 'jpg' or self.file_ext == 'jpeg':
+            img_title = 'jpg'
+        else:
+            img_title = 'dpx'
+        self.img_task = author.Task(title = "render"+img_title)
         cmd = ['rez-env','nuke-11','--','nuke','-ix',self.nuke_script]
         if not self.scan_colorspace.find("ACES") == -1: 
             cmd = ['rez-env','nuke-11','ocio_config','--','nuke','-ix',self.nuke_script]
@@ -458,8 +458,24 @@ class Publish:
             cmd = ["echo","'pass'"]
 
         command = author.Command(argv=cmd)
-        self.jpg_task.addCommand(command)
-        self.mp4_task.addChild(self.jpg_task)
+        self.img_task.addCommand(command)
+
+        if self.file_ext == 'dpx':
+            self.sub_jpg_task = author.Task(title = "render"+img_title)
+            sub_nuke_script = self.create_nuke_script(opt="sub")
+            cmd = ['rez-env','nuke-11','--','nuke','-ix',sub_nuke_script]
+            if not self.scan_colorspace.find("ACES") == -1:
+                cmd = ['rez-env','nuke-11','ocio_config','--','nuke','-ix',sub_nuke_script]
+            if not self.scan_colorspace.find("Alexa") == -1:
+                cmd = ['rez-env','nuke-11','alexa_config','--','nuke','-ix',sub_nuke_script]
+            if self.master_input.ext == "mov":
+                cmd = ["echo","'pass'"]
+            command = author.Command(argv=cmd)
+            self.sub_jpg_task.addCommand(command)
+            self.sub_jpg_task.addChild(self.img_task)
+            self.mp4_task.addChild(self.sub_jpg_task)
+        else:
+            self.mp4_task.addChild(self.img_task)
 
     def convert_mp4_job(self):
 
@@ -575,9 +591,8 @@ class Publish:
         command = author.Command(argv=command)
         self.mp4_task.addCommand(command)
 
-
         self.sg_task.addChild(self.mp4_task)
-    
+
     def create_sg_job(self):
 
         self.sg_task = author.Task(title = "sg version")
@@ -724,12 +739,15 @@ class Publish:
         with open( tmp_nuke_script_file, 'w' ) as f:
             f.write( nk )
         return tmp_nuke_script_file
-    
+
 
     def create_mov_nuke_script(self):
-    
         if not self.master_input.ext == "mov":
-            return
+            if self.master_input.ext == "dpx":
+                pass
+            else:
+                return
+
 
         width,height = self.master_input.resolution.split("x")
         app = sgtk.platform.current_bundle()
@@ -823,8 +841,15 @@ class Publish:
             f.write( nk )
         return tmp_nuke_script_file
 
-    def create_nuke_script(self):
-        
+
+    def create_nuke_script(self, file_type=None, opt=None):
+        if file_type is None:
+            file_type = self.file_ext
+        else:
+            file_type = 'jpg'
+
+        print '===== {} ====='.format(file_type)
+
         width,height = self.master_input.resolution.split("x")
         app = sgtk.platform.current_bundle()
         context = app.context
@@ -835,18 +860,41 @@ class Publish:
                                ['sg_colorspace','sg_mov_codec',
                                'sg_out_format','sg_fps','sg_mov_colorspace'])
 
-    
+
     
         setting = Output(output_info)
 
-        
-        jpg_path = os.path.join(self.plate_jpg_path,self.plate_file_name+".%04d.jpg")
-        jpg_2k_path = os.path.join(self.plate_jpg_2k_path,self.plate_file_name+".%04d.jpg")
-        read_path = os.path.join(self.plate_path,self.plate_file_name+".%04d."+self.file_ext)
-        tmp_nuke_script_file = os.path.join(self._app.sgtk.project_path,'seq',
-                                self.seq_name,
-                                self.shot_name,"plate",
-                                self.plate_file_name+".py")
+        if opt is not None:
+            opt_plate_jpg_path = self.plate_jpg_path.replace('org', 'org_jpg')
+            opt_plate_jpg_2k_path = self.plate_jpg_2k_path.replace('org', 'org_jpg')
+        else:
+            opt_plate_jpg_path = self.plate_jpg_path
+            opt_plate_jpg_2k_path = self.plate_jpg_2k_path
+        jpg_path = os.path.join(opt_plate_jpg_path,self.plate_file_name+".%04d.{}".format(file_type))
+        jpg_2k_path = os.path.join(opt_plate_jpg_2k_path,self.plate_file_name+".%04d.{}".format(file_type))
+        dpx_path = os.path.join(self.plate_dpx_path, self.plate_file_name+".%04d.{}".format(file_type))
+        if file_type == "dpx" and opt is None:
+            colorspace = self.scan_colorspace.replace("ACES-", "")
+            read_path = os.path.join(self._app.sgtk.project_path, 'seq',
+                                    self.seq_name,
+                                    self.shot_name, "plate",
+                                    self.plate_file_name + "_" + colorspace + ".mov")
+        else:
+            if opt is not None:
+                read_path = os.path.join(self.plate_dpx_path, self.plate_file_name+".%04d.dpx")
+            else:
+                read_path = os.path.join(self.plate_path,self.plate_file_name+".%04d."+file_type)
+
+        if file_type == 'dpx' and opt is None:
+            tmp_nuke_script_file = os.path.join(self._app.sgtk.project_path,'seq',
+                                    self.seq_name,
+                                    self.shot_name,"plate",
+                                    self.plate_file_name+"_dpx.py")
+        else:
+            tmp_nuke_script_file = os.path.join(self._app.sgtk.project_path,'seq',
+                                    self.seq_name,
+                                    self.shot_name,"plate",
+                                    self.plate_file_name+".py")
 
         mov_path = os.path.join(self._app.sgtk.project_path,'seq',
                                 self.seq_name,
@@ -885,25 +933,43 @@ class Publish:
         #    nk += 'colorspaceOut ="{}" )\n'.format( cs_out )
         #    tg = 'vf'
         if int(width) > 2048:
-            
+            if file_type == 'jpg' and opt is not None:
+                output_path = jpg_2k_path
+            else:
+                if opt is not None:
+                    output_path = dpx_path.replace('org', 'org_jpg')
+                    output_path = output_path.replace('v%03d_dpx'%self.version, 'v%03d'%self.version)
+                    output_path = output_path.replace('.dpx', '.jpg')
+                else:
+                    output_path = dpx_path
             nk += 'reformat = reformat = nuke.nodes.Reformat(inputs=[%s],type=2,scale=.5)\n' %tg
             reformat = 'reformat'
-            nk += 'output = "{}"\n'.format( jpg_2k_path )
+            nk += 'output = "{}"\n'.format( output_path )
             nk += 'write   = nuke.nodes.Write(name="ww_write_2k", inputs = [%s],file=output )\n'% reformat
-            nk += 'write["file_type"].setValue( "jpeg" )\n'
+            nk += 'write["file_type"].setValue( "{}" )\n'.format(self.file_ext)
             nk += 'write["create_directories"].setValue(True)\n'
             nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
             nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
             nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
             nk += 'nuke.execute(write,1001,{},1)\n'.format(int(1000+frame_count))
 
-        nk += 'output = "{}"\n'.format( jpg_path )
+        if file_type == 'jpg' and opt is not None:
+            output_path = jpg_path
+        else:
+            if opt is not None:
+                output_path = dpx_path.replace('org', 'org_jpg')
+                output_path = output_path.replace('v%03d_dpx' % self.version, 'v%03d' % self.version)
+                output_path = output_path.replace('.dpx', '.jpg')
+            else:
+                output_path = dpx_path
+        nk += 'output = "{}"\n'.format( output_path )
         nk += 'write   = nuke.nodes.Write(name="ww_write", inputs = [%s],file=output )\n'% tg
-        nk += 'write["file_type"].setValue( "jpeg" )\n'
+        nk += 'write["file_type"].setValue( "{}" )\n'.format(self.file_ext)
         nk += 'write["create_directories"].setValue(True)\n'
         nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
-        nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
-        nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
+        if self.file_ext != "dpx":
+            nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
+            nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
         #nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
         nk += 'nuke.execute(write,1001,{},1)\n'.format(int(1000+frame_count))
 
@@ -1097,6 +1163,12 @@ class Publish:
         return temp
 
     @property
+    def plate_dpx_path(self):
+        temp = os.path.join(self._app.sgtk.project_path,'seq',self.seq_name,
+               self.shot_name,"plate",self.seq_type,"v%03d"%self.version)
+        return temp
+
+    @property
     def plate_file_name(self):
         temp = self.shot_name + "_"+self.seq_type+"_v%03d"%self.version
         return temp
@@ -1148,9 +1220,9 @@ class Publish:
             "sg_colorspace": self.scan_colorspace
         }
 
-        if self.published_ent:
-            self._sg.update("PublishedFile",self.published_ent['id'],desc)
-            return
+        # if self.published_ent:
+        #     self._sg.update("PublishedFile",self.published_ent['id'],desc)
+        #     return
 
         if self.seq_type == "org":
             published_type = "Plate"
@@ -1158,8 +1230,11 @@ class Publish:
             published_type = "Reference"
         else:
             published_type = "Source"
-            
-        published_file = os.path.join(self.plate_path,self.plate_file_name+".%04d."+file_ext)
+
+        if file_ext == 'dpx':
+            published_file = os.path.join(self.plate_dpx_path, self.plate_file_name + ".%04d.dpx")
+        else:
+            published_file = os.path.join(self.plate_path,self.plate_file_name+".%04d."+file_ext)
         if self.master_input.ext == "mov":
             published_file = os.path.join(self._app.sgtk.project_path,'seq',
                                 self.seq_name,
