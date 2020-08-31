@@ -840,15 +840,15 @@ class Publish:
 
         nk = ''
         nk += 'import nuke\n'
-        nk += 'nuke.knob("root.first_frame", "{}" )\n'.format(1001)
-        nk += 'nuke.knob("root.last_frame", "{}" )\n'.format(int(1000 + frame_count))
+        nk += 'nuke.knob("root.first_frame", "{}" )\n'.format(1)
+        nk += 'nuke.knob("root.last_frame", "{}" )\n'.format(int(frame_count))
         # nk += 'nuke.knob("root.fps", "{}" )\n'.format( framerate )
         if self.file_ext == 'mov':
             nk += 'read = nuke.nodes.Read( name="Read1",file="{}" )\n'.format(mov_path)
         else:
             nk += 'read = nuke.nodes.Read( name="Read1",file="{}" )\n'.format(read_path)
-        nk += 'read["first"].setValue( {} )\n'.format(1001)
-        nk += 'read["last"].setValue( {} )\n'.format(int(1000 + frame_count))
+        nk += 'read["first"].setValue( {} )\n'.format(1)
+        nk += 'read["last"].setValue( {} )\n'.format(int(frame_count))
         nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
         if self.file_ext in ["dpx"] and project == "sweethome":
             nk += 'read["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
