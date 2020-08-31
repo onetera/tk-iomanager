@@ -935,7 +935,7 @@ class Publish:
             nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
             # nk += 'write["colorspace"].setValue( "Cineon" )\n'
             # nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
-            nk += 'nuke.execute(write,1001,{},1)\n'.format(int(frame_count))
+            nk += 'nuke.execute(write,1001,{},1)\n'.format(1000+int(frame_count))
             nk += 'exit()\n'
 
         if not os.path.exists(os.path.dirname(tmp_nuke_script_file)):
