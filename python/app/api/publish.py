@@ -840,6 +840,7 @@ class Publish:
 
         nk = ''
         nk += 'import nuke\n'
+        nk += 'import os\n'
         nk += 'nuke.knob("root.first_frame", "{}" )\n'.format(1)
         nk += 'nuke.knob("root.last_frame", "{}" )\n'.format(int(frame_count))
         # nk += 'nuke.knob("root.fps", "{}" )\n'.format( framerate )
@@ -877,7 +878,7 @@ class Publish:
                 nk += 'write["file_type"].setValue( "dpx" )\n'
                 nk += 'write["create_directories"].setValue(True)\n'
                 nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
-                nk += 'nuke.execute(write,1001,{},1)\n'.format(int(1000 + frame_count))
+                nk += 'nuke.execute(write,1,{},1)\n'.format(int(frame_count))
             nk += 'output2 = "{}"\n'.format(jpg_2k_path)
             nk += 'write = nuke.nodes.Write(name="ww_write_2k", inputs = [%s],file=output2 )\n' % reformat
             nk += 'write["file_type"].setValue( "jpeg" )\n'
@@ -885,7 +886,7 @@ class Publish:
             nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
             nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
             nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
-            nk += 'nuke.execute(write,1001,{},1)\n'.format(int(1000 + frame_count))
+            nk += 'nuke.execute(write,1,{},1)\n'.format(int(frame_count))
 
         if self.file_ext == 'mov':
             nk += 'output = "{}"\n'.format(dpx_path)
@@ -893,7 +894,7 @@ class Publish:
             nk += 'write["file_type"].setValue( "dpx" )\n'
             nk += 'write["create_directories"].setValue(True)\n'
             nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
-            nk += 'nuke.execute(write,1001,{},1)\n'.format(int(1000 + frame_count))
+            nk += 'nuke.execute(write,1,{},1)\n'.format(int(frame_count))
         nk += 'output2 = "{}"\n'.format(jpg_path)
         nk += 'write = nuke.nodes.Write(name="ww_write", inputs = [%s],file=output2 )\n' % tg
         nk += 'write["file_type"].setValue( "jpeg" )\n'
@@ -902,7 +903,21 @@ class Publish:
         nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
         nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
         # nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
-        nk += 'nuke.execute(write,1001,{},1)\n'.format(int(1000 + frame_count))
+        nk += 'nuke.execute(write,1,{},1)\n'.format(int(frame_count))
+
+        if self.file_ext == 'mov':
+            nk += 'dpx_dir = os.path.dirname(output)\n'
+            nk += 'dpx_list = sorted(os.listdir(dpx_dir))\n'
+            nk += 'cnt = cnt2 = 1001\n'
+            nk += 'for target in dpx_list:\n'
+            nk += '    os.rename(dpx_dir+"/"+target, dpx_dir+"/{}.%d.dpx"%cnt)\n'.format(self.plate_file_name)
+            nk += '    cnt += 1\n'
+            nk += 'jpg_dir = os.path.dirname(output2)\n'
+            nk += 'jpg_list = sorted(os.listdir(jpg_dir))\n'
+            nk += 'for target in jpg_list:\n'
+            nk += '    os.rename(jpg_dir+"/"+target, jpg_dir+"/{}.%d.jpg"%cnt2)\n'.format(self.plate_file_name)
+            nk += '    cnt2 += 1\n'
+            nk += 'exit()\n'
 
         if self.file_ext != 'mov':
             if int(width) > 2048:
@@ -920,7 +935,7 @@ class Publish:
             nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
             # nk += 'write["colorspace"].setValue( "Cineon" )\n'
             # nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
-            nk += 'nuke.execute(write,1001,{},1)\n'.format(int(1000 + frame_count))
+            nk += 'nuke.execute(write,1001,{},1)\n'.format(int(frame_count))
             nk += 'exit()\n'
 
         if not os.path.exists(os.path.dirname(tmp_nuke_script_file)):
