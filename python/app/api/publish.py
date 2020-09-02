@@ -839,7 +839,7 @@ class Publish:
     
         setting = Output(output_info)
 
-        
+        # original version
         jpg_path = os.path.join(self.plate_jpg_path,self.plate_file_name+".%04d.jpg")
         jpg_2k_path = os.path.join(self.plate_jpg_2k_path,self.plate_file_name+".%04d.jpg")
         read_path = os.path.join(self.plate_path,self.plate_file_name+".%04d."+self.file_ext)
