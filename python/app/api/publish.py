@@ -838,18 +838,19 @@ class Publish:
         else:
             frame_count = len(self.copy_file_list)
 
+        end_frame = int(self.master_input.just_out) - int(self.master_input.just_in) + 1
         nk = ''
         nk += 'import nuke\n'
         nk += 'import os\n'
         nk += 'nuke.knob("root.first_frame", "{}" )\n'.format(1)
-        nk += 'nuke.knob("root.last_frame", "{}" )\n'.format(int(frame_count))
+        nk += 'nuke.knob("root.last_frame", "{}" )\n'.format(end_frame)
         # nk += 'nuke.knob("root.fps", "{}" )\n'.format( framerate )
         if self.file_ext == 'mov':
             nk += 'read = nuke.nodes.Read( name="Read1",file="{}" )\n'.format(mov_path)
         else:
             nk += 'read = nuke.nodes.Read( name="Read1",file="{}" )\n'.format(read_path)
         nk += 'read["first"].setValue( {} )\n'.format(1)
-        nk += 'read["last"].setValue( {} )\n'.format(int(frame_count))
+        nk += 'read["last"].setValue( {} )\n'.format(end_frame)
         nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
         if self.file_ext in ["dpx"] and project == "sweethome":
             nk += 'read["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
@@ -878,7 +879,7 @@ class Publish:
                 nk += 'write["file_type"].setValue( "dpx" )\n'
                 nk += 'write["create_directories"].setValue(True)\n'
                 nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
-                nk += 'nuke.execute(write,1,{},1)\n'.format(int(frame_count))
+                nk += 'nuke.execute(write,1,{},1)\n'.format(end_frame)
             nk += 'output2 = "{}"\n'.format(jpg_2k_path)
             nk += 'write = nuke.nodes.Write(name="ww_write_2k", inputs = [%s],file=output2 )\n' % reformat
             nk += 'write["file_type"].setValue( "jpeg" )\n'
@@ -886,7 +887,7 @@ class Publish:
             nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
             nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
             nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
-            nk += 'nuke.execute(write,1,{},1)\n'.format(int(frame_count))
+            nk += 'nuke.execute(write,1,{},1)\n'.format(end_frame)
 
         if self.file_ext == 'mov':
             nk += 'output = "{}"\n'.format(dpx_path)
@@ -894,7 +895,7 @@ class Publish:
             nk += 'write["file_type"].setValue( "dpx" )\n'
             nk += 'write["create_directories"].setValue(True)\n'
             nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
-            nk += 'nuke.execute(write,1,{},1)\n'.format(int(frame_count))
+            nk += 'nuke.execute(write,1,{},1)\n'.format(end_frame)
         nk += 'output2 = "{}"\n'.format(jpg_path)
         nk += 'write = nuke.nodes.Write(name="ww_write", inputs = [%s],file=output2 )\n' % tg
         nk += 'write["file_type"].setValue( "jpeg" )\n'
@@ -903,7 +904,7 @@ class Publish:
         nk += 'write["_jpeg_quality"].setValue( 1.0 )\n'
         nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
         # nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
-        nk += 'nuke.execute(write,1,{},1)\n'.format(int(frame_count))
+        nk += 'nuke.execute(write,1,{},1)\n'.format(end_frame)
 
         if self.file_ext == 'mov':
             nk += 'dpx_dir = os.path.dirname(output)\n'
