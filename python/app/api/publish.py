@@ -306,6 +306,8 @@ class Publish:
                 cmd = ['rez-env', 'nuke-11', 'alexa_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if self._opt_dpx == True and self.setting.mov_codec == "apch":
                 cmd = ["echo", "'pass'"]
+            if self._opt_dpx == False and self.setting.mov_codec == "apch":
+                cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
             self.jpg_task.addChild(self.org_task)
@@ -812,19 +814,6 @@ class Publish:
             f.write(nk)
         return tmp_nuke_script_file
 
-    def create_nuke_script(self):
-        # recover original version
-        
-        width,height = self.master_input.resolution.split("x")
-        app = sgtk.platform.current_bundle()
-        context = app.context
-        project = context.project
-        shotgun = app.sgtk.shotgun
-
-        output_info = shotgun.find_one("Project",[['id','is',project['id']]],
-                               ['sg_colorspace','sg_mov_codec',
-                               'sg_out_format','sg_fps','sg_mov_colorspace'])
-
     def add_mov_to_dpx_script(self, dpx_path, input_node, start_frame, end_frame):
         nk = ''
         nk += 'write = app.createWriter("{}")\n'.format(dpx_path)
@@ -871,7 +860,6 @@ class Publish:
         nk += 'nuke.execute(write,{},{},1)\n'.format(start_frame, end_frame)
         nk += 'exit()\n'
         return nk
->>>>>>> upstream/master
 
     def create_nuke_script(self):
 
@@ -884,10 +872,6 @@ class Publish:
 
         jpg_path = os.path.join(self.plate_jpg_path, self.plate_file_name + ".%04d.jpg")
         jpg_2k_path = os.path.join(self.plate_jpg_2k_path, self.plate_file_name + ".%04d.jpg")
-        tmp_dpx_to_jpg_file = os.path.join(self._app.sgtk.project_path, 'seq',
-                                           self.seq_name,
-                                           self.shot_name, "plate",
-                                           self.plate_file_name + "_jpg.py")
         tmp_nuke_script_file = os.path.join(self._app.sgtk.project_path, 'seq',
                                             self.seq_name,
                                             self.shot_name, "plate",
@@ -970,6 +954,10 @@ class Publish:
             nk += 'exit()\n'
 
         else:
+            tmp_dpx_to_jpg_file = os.path.join(self._app.sgtk.project_path, 'seq',
+                                               self.seq_name,
+                                               self.shot_name, "plate",
+                                               self.plate_file_name + "_jpg.py")
             # start_frame = 1
             # end_frame = int(self.master_input.just_out) - int(self.master_input.just_in) + 1
             start_frame = int(self.master_input.just_in)
@@ -1031,23 +1019,24 @@ class Publish:
             nk += '    cnt2 += 1\n'
             nk += 'exit()\n'
 
+            if not os.path.exists(os.path.dirname(tmp_dpx_to_jpg_file)):
+                cur_umask = os.umask(0)
+                os.makedirs(os.path.dirname(tmp_dpx_to_jpg_file), 0777)
+                os.umask(cur_umask)
+
+            with open(tmp_dpx_to_jpg_file, 'w') as f:
+                f.write(img_nk)
+
+            print tmp_dpx_to_jpg_file
+
         if not os.path.exists(os.path.dirname(tmp_nuke_script_file)):
             cur_umask = os.umask(0)
             os.makedirs(os.path.dirname(tmp_nuke_script_file), 0777)
             os.umask(cur_umask)
 
-        if not os.path.exists(os.path.dirname(tmp_dpx_to_jpg_file)):
-            cur_umask = os.umask(0)
-            os.makedirs(os.path.dirname(tmp_dpx_to_jpg_file), 0777)
-            os.umask(cur_umask)
-
         with open(tmp_nuke_script_file, 'w') as f:
             f.write(nk)
-        with open(tmp_dpx_to_jpg_file, 'w') as f:
-            f.write(img_nk)
 
-        if self._opt_dpx == True:
-            print tmp_dpx_to_jpg_file
         print tmp_nuke_script_file
         return tmp_nuke_script_file
 
