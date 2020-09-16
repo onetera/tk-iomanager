@@ -812,6 +812,19 @@ class Publish:
             f.write(nk)
         return tmp_nuke_script_file
 
+    def create_nuke_script(self):
+        # recover original version
+        
+        width,height = self.master_input.resolution.split("x")
+        app = sgtk.platform.current_bundle()
+        context = app.context
+        project = context.project
+        shotgun = app.sgtk.shotgun
+
+        output_info = shotgun.find_one("Project",[['id','is',project['id']]],
+                               ['sg_colorspace','sg_mov_codec',
+                               'sg_out_format','sg_fps','sg_mov_colorspace'])
+
     def add_mov_to_dpx_script(self, dpx_path, input_node, start_frame, end_frame):
         nk = ''
         nk += 'write = app.createWriter("{}")\n'.format(dpx_path)
@@ -858,6 +871,7 @@ class Publish:
         nk += 'nuke.execute(write,{},{},1)\n'.format(start_frame, end_frame)
         nk += 'exit()\n'
         return nk
+>>>>>>> upstream/master
 
     def create_nuke_script(self):
 
