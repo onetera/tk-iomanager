@@ -824,6 +824,7 @@ class Publish:
         return tmp_nuke_script_file
 
     def create_nuke_script(self):
+        # recover original version
         
         width,height = self.master_input.resolution.split("x")
         app = sgtk.platform.current_bundle()
