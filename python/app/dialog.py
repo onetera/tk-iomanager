@@ -77,8 +77,7 @@ class AppDialog(QtGui.QWidget):
         self.ui.v_src.clicked.connect(lambda: self._validate("src"))
         self.ui.v_editor.clicked.connect(lambda: self._validate("editor"))
         self.ui.edit_excel.setEnabled(False)
-    
-    
+
     def _set_colorspace(self):
         context = self._app.context
         project = context.project
@@ -248,8 +247,9 @@ class AppDialog(QtGui.QWidget):
         for value in group_model.values():
             print value
             master_input = publish.MasterInput(model,value,'shot_name')
-            
-            publish.Publish(master_input,colorspace)
+
+            opt_dpx = self.ui.mov_dpx_check.isChecked()
+            publish.Publish(master_input,colorspace, opt_dpx)
 
 
     def _collect(self):
