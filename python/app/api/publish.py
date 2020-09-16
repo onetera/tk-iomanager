@@ -962,7 +962,8 @@ class Publish:
             # end_frame = int(self.master_input.just_out) - int(self.master_input.just_in) + 1
             start_frame = int(self.master_input.just_in)
             end_frame = int(self.master_input.just_out)
-            dpx_path = os.path.join(self.plate_path, self.plate_file_name + ".%04d.dpx")
+            dpx_dir = self.plate_path.replace('v%03d'%self.version, 'v%03d_dpx'%self.version)
+            dpx_path = os.path.join(dpx_dir, self.plate_file_name + ".%04d.dpx")
             read_path = os.path.join(self.master_input.scan_path,self.master_input.scan_name)
 
             self.use_natron = True
