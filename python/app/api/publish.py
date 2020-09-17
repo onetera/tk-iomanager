@@ -417,6 +417,9 @@ class Publish:
             ['entity', 'is', self.shot_ent],
             ['code', 'is', mov_name]
         ]
+
+        if self._opt_dpx == True and self.setting.mov_codec == "apch":
+            read_path = os.path.join(self.plate_path, self.plate_file_name + ".%04d.dpx")
         desc = {
             "project": self.project,
             "code": mov_name,
