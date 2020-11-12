@@ -18,6 +18,7 @@ colorspace_set = {
     "ACES - ACEScg": "Output - Rec.709",
     "ACES - ACES2065-1": "Output - Rec.709",
     "AlexaV3LogC": "AlexaViewer",
+    "legacy": "LegacyViewer",
     "Cineon": "rec709",
     "rec709": "rec709",
 
@@ -293,6 +294,8 @@ class Publish:
                 cmd = ['rez-env', 'nuke-11', 'ocio_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             if not self.scan_colorspace.find("Alexa") == -1:
                 cmd = ['rez-env', 'nuke-11', 'alexa_config', '--', 'nuke', '-ix', self.nuke_retime_script]
+            if not self.scan_colorspace.find("legacy") == -1:
+                cmd = ['rez-env', 'nuke-11', 'legacy_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
             self.jpg_task.addChild(self.org_task)
@@ -304,6 +307,8 @@ class Publish:
                 cmd = ['rez-env', 'nuke-11', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("Alexa") == -1:
                 cmd = ['rez-env', 'nuke-11', 'alexa_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+            if not self.scan_colorspace.find("legacy") == -1:
+                cmd = ['rez-env', 'nuke-11', 'legacy_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             if self._opt_dpx == True and self.setting.mov_codec == "apch":
                 cmd = ["echo", "'pass'"]
             if self._opt_dpx == False and self.setting.mov_codec == "apch":
@@ -451,11 +456,15 @@ class Publish:
                 cmd = ['rez-env', 'natron', 'ocio_config', '--', 'NatronRenderer', '-t', self.nuke_script]
             if not self.scan_colorspace.find("Alexa") == -1:
                 cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_script]
+            if not self.scan_colorspace.find("legacy") == -1:
+                cmd = ['rez-env', 'natron', 'legacy_config', '--', 'NatronRenderer', '-t', self.nuke_script]
         else:
             if not self.scan_colorspace.find("ACES") == -1:
                 cmd = ['rez-env', 'nuke-11', 'ocio_config', '--', 'nuke', '-ix', self.nuke_script]
             if not self.scan_colorspace.find("Alexa") == -1:
                 cmd = ['rez-env', 'nuke-11', 'alexa_config', '--', 'nuke', '-ix', self.nuke_script]
+            if not self.scan_colorspace.find("legacy") == -1:
+                cmd = ['rez-env', 'nuke-11', 'legacy_config', '--', 'nuke', '-ix', self.nuke_script]
         if self.master_input.ext == "mov" and self._opt_dpx == False:
             cmd = ["echo", "'pass'"]
 
@@ -1006,6 +1015,8 @@ class Publish:
                 color_config = 'ocio_config'
             if not self.scan_colorspace.find("Alexa") == -1:
                 color_config = 'alexa_config'
+            if not self.scan_colorspace.find("legacy") == -1:
+                color_config = 'legacy_config'
 
             nk += 'os.system("rez-env nuke-11 {} -- nuke -ix {}")\n'.format(color_config, tmp_dpx_to_jpg_file)
             nk += 'os.remove("{}")\n'.format(tmp_dpx_to_jpg_file)
