@@ -1034,9 +1034,6 @@ class Publish:
             nk += 'cnt1 = cnt2 = 1001\n'
             nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
             nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
-            nk += 'for target in dpx_output_list:\n'
-            nk += '    os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.dpx"%cnt1)\n'.format(self.plate_file_name)
-            nk += '    cnt1 += 1\n'
             nk += 'for target in jpg_output_list:\n'
             nk += '    os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.dpx"%cnt1)\n'.format(self.plate_file_name)
             nk += '    cnt1 += 1\n'
