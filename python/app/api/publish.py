@@ -423,7 +423,7 @@ class Publish:
             ['code', 'is', mov_name]
         ]
 
-        if self._opt_dpx == True and self.setting.mov_codec == "apch":
+        if self._opt_dpx == True:
             read_path = os.path.join(self.plate_path, self.plate_file_name + ".%04d.dpx")
         desc = {
             "project": self.project,
