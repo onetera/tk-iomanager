@@ -428,7 +428,7 @@ class Publish:
         desc = {
             "project": self.project,
             "code": mov_name,
-            "sg_status_list": "rev",
+            "sg_status_list": "fin",
             'entity': self.shot_ent,
             "sg_path_to_movie": mov_path,
             "sg_path_to_frames": read_path,
