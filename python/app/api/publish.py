@@ -265,10 +265,11 @@ class Publish:
         return
 
     def update_shot_info(self):
+        frame_count = int(self.master_input.end_frame) - int(self.master_input.start_frame) + 1
         desc = {
             "sg_cut_in": 1001,
-            "sg_cut_out": 1000 + len(self.copy_file_list),
-            "sg_cut_duration": len(self.copy_file_list),
+            "sg_cut_out": 1000 + frame_count,
+            "sg_cut_duration": frame_count,
             "sg_timecode_in": self.master_input.timecode_in,
             "sg_timecode_out": self.master_input.timecode_out,
             "sg_resolution": self.master_input.resolution,
