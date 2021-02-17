@@ -265,11 +265,12 @@ class Publish:
         return
 
     def update_shot_info(self):
-        frame_count = int(self.master_input.end_frame) - int(self.master_input.start_frame) + 1
+        # ** original plate duration
+        #frame_count = int(self.master_input.end_frame) - int(self.master_input.start_frame) + 1
         desc = {
             "sg_cut_in": 1001,
-            "sg_cut_out": 1000 + frame_count,
-            "sg_cut_duration": frame_count,
+            "sg_cut_out": 1000 + len(self.copy_file_list),
+            "sg_cut_duration": len(self.copy_file_list),
             "sg_timecode_in": self.master_input.timecode_in,
             "sg_timecode_out": self.master_input.timecode_out,
             "sg_resolution": self.master_input.resolution,
@@ -1094,6 +1095,9 @@ class Publish:
                                     self.shot_name, "plate",
                                     self.plate_file_name + "stream.jpeg")
 
+        # ** real plate duration
+        #update_desc = {'sg_just_cut': len(self.copy_file_list)}
+
         nk = ''
         nk += 'import shotgun_api3\n'
         nk += 'import time\n'
@@ -1105,6 +1109,8 @@ class Publish:
         nk += 'sg.upload_thumbnail( "PublishedFile", %s, "%s")\n' % (self.published_ent['id'], jpg_path)
         nk += 'sg.upload_thumbnail( "Version", %s, "%s")\n' % (self.version_ent['id'], jpg_path)
         nk += 'sg.upload_filmstrip_thumbnail( "Version", %s, "%s")\n' % (self.version_ent['id'], montage_path)
+        # ** command for real plate duration
+        #nk += 'sg.update( "Shot", {}, {})\n'.format(self.shot_ent['id'], update_desc)
         nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_mp4" )\n' % (self.version_ent['id'], mp4_path)
         nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_webm" )\n' % (self.version_ent['id'], webm_path)
         # nk += 'time.sleep(20)\n'
