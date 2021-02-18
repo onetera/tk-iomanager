@@ -883,6 +883,8 @@ class Publish:
             frame_count = sum([x['retime_duration'] for x in self.master_input.retime_info])
         else:
             frame_count = len(self.copy_file_list)
+            if frame_count == 0:
+                return None
 
         jpg_path = os.path.join(self.plate_jpg_path, self.plate_file_name + ".%04d.jpg")
         jpg_2k_path = os.path.join(self.plate_jpg_2k_path, self.plate_file_name + ".%04d.jpg")
@@ -1137,14 +1139,17 @@ class Publish:
         # file_name  = self.master_input.scan_name
         file_ext = self.master_input.ext
         sequence = pyseq.get_sequences(scan_path)
-        if sequence[0].length() == 1:
-            file_list.append(sequence[0].head())
-            return file_list
-        file_format = sequence[0].format("%h%p%t")
+        if sequence != []:
+            if sequence[0].length() == 1:
+                file_list.append(sequence[0].head())
+                return file_list
+            file_format = sequence[0].format("%h%p%t")
 
-        for i in range(int(start_index), int(end_index) + 1):
-            copy_file = file_format % i
-            file_list.append(copy_file)
+            for i in range(int(start_index), int(end_index) + 1):
+                copy_file = file_format % i
+                file_list.append(copy_file)
+        else:
+            print "**  Here are Not Any Sequence! Check Your Sequence!  **"
 
         return file_list
 
