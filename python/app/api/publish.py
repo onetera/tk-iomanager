@@ -1028,6 +1028,26 @@ class Publish:
             nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
             nk += 'jpg_output_dir = os.path.dirname("{}")\n'.format(jpg_path)
             nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
+            if len(str(end_frame)) > 4:
+                nk += 'dpx_tmp_list, jpg_tmp_list = [], []\n'
+                nk += 'for target in dpx_output_list:\n'
+                nk += '    name = target.split(".")\n'
+                nk += '    if len(name[1]) != {}:\n'.format(len(str(end_frame)))
+                nk += '        res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(end_frame)))
+                nk += '        os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/"+res)\n'
+                nk += '        dpx_tmp_list.append(res)\n'
+                nk += '    else:\n'
+                nk += '        dpx_tmp_list.append(target)\n'
+                nk += 'for target in jpg_output_list:\n'
+                nk += '    name = target.split(".")\n'
+                nk += '    if len(name[1]) != {}:\n'.format(len(str(end_frame)))
+                nk += '        res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(end_frame)))
+                nk += '        os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/"+res)\n'
+                nk += '        jpg_tmp_list.append(res)\n'
+                nk += '    else:\n'
+                nk += '        jpg_tmp_list.append(target)\n'
+                nk += 'dpx_output_list = sorted(dpx_tmp_list)\n'
+                nk += 'jpg_output_list = sorted(jpg_tmp_list)\n'
             nk += 'cnt1 = cnt2 = 1001\n'
             nk += 'for target in dpx_output_list:\n'
             nk += '    os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.org.dpx"%cnt1)\n'.format(self.plate_file_name)
