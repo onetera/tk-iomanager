@@ -995,19 +995,18 @@ class Publish:
             tg = 'read'
             color = self.scan_colorspace
 
-            if int(width) > 2048:
-                nk += 'reformat = app.createNode("net.sf.openfx.Reformat")\n'
-                nk += 'reformat.connectInput(0, read)\n'
-                nk += 'reformat.getParam("reformatType").setValue(2)\n'
-                nk += 'reformat.getParam("reformatScale").setValue(.5)\n'
-                tg = 'reformat'
-                nk += self.add_mov_to_dpx_script(dpx_path, tg, start_frame, end_frame)
-                img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_2k_path, color,
-                                                           colorspace_set[color], width, mov_path)
-            else:
-                img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_path, color,
-                                                           colorspace_set[color], width, mov_path)
-                nk += self.add_mov_to_dpx_script(dpx_path, tg, start_frame, end_frame)
+            # if int(width) > 2048:
+            #     nk += 'reformat = app.createNode("net.sf.openfx.Reformat")\n'
+            #     nk += 'reformat.connectInput(0, read)\n'
+            #     nk += 'reformat.getParam("reformatType").setValue(2)\n'
+            #     nk += 'reformat.getParam("reformatScale").setValue(.5)\n'
+            #     tg = 'reformat'
+            #     nk += self.add_mov_to_dpx_script(dpx_path, tg, start_frame, end_frame)
+            #     img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_2k_path, color,
+            #                                                colorspace_set[color], width, mov_path)
+            img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_path, color,
+                                                       colorspace_set[color], width, mov_path)
+            nk += self.add_mov_to_dpx_script(dpx_path, tg, start_frame, end_frame)
 
             color_config = 'alexa_config'
             if not self.scan_colorspace.find("ACES") == -1:
@@ -1018,14 +1017,14 @@ class Publish:
                 color_config = 'legacy_config'
 
             nk += 'os.system("rez-env nuke-11 {} -- nuke -ix {}")\n'.format(color_config, tmp_dpx_to_jpg_file)
-            if int(width) > 2048:
-                nk += 'jpg_2k_dir = os.path.dirname("{}")\n'.format(jpg_2k_path)
-                nk += 'jpg_2k_list = sorted(os.listdir(jpg_2k_dir))\n'
-                nk += 'cnt = 1001\n'
-                nk += 'for target in jpg_2k_list: \n'
-                nk += '    os.rename(jpg_2k_dir+"/"+target, jpg_2k_dir+"/{}.%d.jpg"%cnt)\n'.format(self.plate_file_name)
-                nk += '    cnt += 1\n'
-                jpg_path = jpg_2k_path
+            # if int(width) > 2048:
+            #     nk += 'jpg_2k_dir = os.path.dirname("{}")\n'.format(jpg_2k_path)
+            #     nk += 'jpg_2k_list = sorted(os.listdir(jpg_2k_dir))\n'
+            #     nk += 'cnt = 1001\n'
+            #     nk += 'for target in jpg_2k_list: \n'
+            #     nk += '    os.rename(jpg_2k_dir+"/"+target, jpg_2k_dir+"/{}.%d.jpg"%cnt)\n'.format(self.plate_file_name)
+            #     nk += '    cnt += 1\n'
+            #     jpg_path = jpg_2k_path
             nk += 'os.remove("{}")\n'.format(tmp_dpx_to_jpg_file)
             nk += 'dpx_output_dir = os.path.dirname("{}")\n'.format(dpx_path)
             nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
