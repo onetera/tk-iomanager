@@ -311,9 +311,9 @@ class Publish:
                 cmd = ['rez-env', 'nuke-11', 'alexa_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("legacy") == -1:
                 cmd = ['rez-env', 'nuke-11', 'legacy_config', '--', 'nuke', '-ix', self.nuke_retime_script]
-            if self._opt_dpx == True and self.setting.mov_codec == "apch":
+            if self._opt_dpx == True and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
                 cmd = ["echo", "'pass'"]
-            if self._opt_dpx == False and self.setting.mov_codec == "apch":
+            if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
                 cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
@@ -759,8 +759,7 @@ class Publish:
                                             self.shot_name, "plate",
                                             self.plate_file_name + "_mov.py")
 
-        if self.setting.mov_codec == "apch":
-
+        if self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h":
             self.use_natron = True
 
             nk = ''
@@ -784,9 +783,11 @@ class Publish:
                 nk += 'write.getParam("ocioOutputSpaceIndex").setValue(1)\n'
             nk += 'write.getParam("frameRange").setValue(0)\n'
             nk += 'write.getParam("format").setValue(5)\n'
-            nk += 'write.getParam("codec").setValue(1)\n'
+            codec_index = 0
+            if self.setting.mov_codec == 'apch' or self.setting.mov_codec == 'ap4h':
+                codec_index = 1
+            nk += 'write.getParam("codec").setValue({})\n'.format(codec_index)
             nk += 'write.getParam("fps").setValue({})\n'.format(self.master_input.framerate)
-            nk += 'app.render(write,{0},{1})\n'.format(int(self.master_input.just_in), int(self.master_input.just_out))
             nk += 'app.render(write,{0},{1})\n'.format(int(self.master_input.just_in), int(self.master_input.just_out))
             nk += 'exit()\n'
         else:
@@ -997,22 +998,16 @@ class Publish:
             if int(width) > 2048:
                 nk += 'reformat = app.createNode("net.sf.openfx.Reformat")\n'
                 nk += 'reformat.connectInput(0, read)\n'
-                nk += 'reformat.getParam("type").setValue(2)\n'
-                nk += 'reformat.getParam("scale").setValue(.5)\n'
+                nk += 'reformat.getParam("reformatType").setValue(2)\n'
+                nk += 'reformat.getParam("reformatScale").setValue(.5)\n'
                 tg = 'reformat'
                 nk += self.add_mov_to_dpx_script(dpx_path, tg, start_frame, end_frame)
                 img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_2k_path, color,
                                                            colorspace_set[color], width, mov_path)
-                nk += '2k_jpg_dir = os.path.dirname("{}")'.format(jpg_2k_path)
-                nk += '2k_jpg_list = sorted(os.listdir(2k_jpg_dir))'
-                nk += 'cnt = 1001\n'
-                nk += 'for target in 2k_jpg_list: \n'
-                nk += '    os.rename(2k_jpg_dir+"/"+target, 2k+jpg_dir+"/{}.%d.jpg"%cnt)\n'.format(self.plate_file_name)
-                nk += '    cnt += 1\n'
             else:
                 img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_path, color,
                                                            colorspace_set[color], width, mov_path)
-            nk += self.add_mov_to_dpx_script(dpx_path, tg, start_frame, end_frame)
+                nk += self.add_mov_to_dpx_script(dpx_path, tg, start_frame, end_frame)
 
             color_config = 'alexa_config'
             if not self.scan_colorspace.find("ACES") == -1:
@@ -1023,6 +1018,14 @@ class Publish:
                 color_config = 'legacy_config'
 
             nk += 'os.system("rez-env nuke-11 {} -- nuke -ix {}")\n'.format(color_config, tmp_dpx_to_jpg_file)
+            if int(width) > 2048:
+                nk += 'jpg_2k_dir = os.path.dirname("{}")\n'.format(jpg_2k_path)
+                nk += 'jpg_2k_list = sorted(os.listdir(jpg_2k_dir))\n'
+                nk += 'cnt = 1001\n'
+                nk += 'for target in jpg_2k_list: \n'
+                nk += '    os.rename(jpg_2k_dir+"/"+target, jpg_2k_dir+"/{}.%d.jpg"%cnt)\n'.format(self.plate_file_name)
+                nk += '    cnt += 1\n'
+                jpg_path = jpg_2k_path
             nk += 'os.remove("{}")\n'.format(tmp_dpx_to_jpg_file)
             nk += 'dpx_output_dir = os.path.dirname("{}")\n'.format(dpx_path)
             nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
