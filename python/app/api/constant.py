@@ -33,11 +33,16 @@ MODEL_KEYS["date"] = 24
 
 
 COLORSPACE=[
+    "===== ACES =====",
     "ACES - ACES2065-1",
     "ACES - ACEScg",
+    "Output - Rec.709",
+    "Output - Rec.2020",
+    "===== Alexa =====",
     "rec709",
     "Cineon",
     "AlexaV3LogC",
+    "===== Legacy =====",
     "legacy"
 
 ]
