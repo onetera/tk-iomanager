@@ -404,8 +404,7 @@ class Publish:
             self.copy_task.addCommand(command)
         if self._opt_non_retime == True:
             self.copy_jpg_task = author.Task(title="copy temp jpg")
-            file_name = self.shot_name + "_tmp_v%03d" % self.version
-            read_path = os.path.join(self.tmp_path, file_name + ".%4d." + file_ext)
+            read_path = os.path.join(self.tmp_path, self.plate_file_name + ".%4d." + file_ext)
             tmp_org_jpg_script = self.create_nuke_temp_script(read_path)
 
             if not self.scan_colorspace.find("ACES") == -1:
@@ -417,7 +416,8 @@ class Publish:
 
             command = author.Command(argv=cmd)
             self.copy_jpg_task.addCommand(command)
-            self.copy_jpg_task.addChild(self.copy_task)
+            if not os.path.exists(self.tmp_path):
+                self.copy_jpg_task.addChild(self.copy_task)
             self.job.addChild(self.copy_jpg_task)
         else:
             self.job.addChild(self.copy_task)
