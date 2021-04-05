@@ -239,7 +239,8 @@ class AppDialog(QtGui.QWidget):
             master_input = publish.MasterInput(model, value, 'shot_name')
 
             opt_dpx = self.ui.mov_dpx_check.isChecked()
-            publish.Publish(master_input, colorspace, opt_dpx)
+            opt_non_retime = self.ui.non_retime_check.isChecked()
+            publish.Publish(master_input, colorspace, opt_dpx, opt_non_retime)
 
     def _collect(self):
 
