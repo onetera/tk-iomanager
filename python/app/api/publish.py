@@ -164,7 +164,7 @@ class MasterInput(object):
 
 class Publish:
 
-    def __init__(self, master_input, scan_colorspace, opt_dpx, parent=None):
+    def __init__(self, master_input, scan_colorspace, opt_dpx, opt_non_retime, parent=None):
 
         self.master_input = master_input
         self.scan_colorspace = scan_colorspace
@@ -186,6 +186,7 @@ class Publish:
         self.setting = Output(output_info)
 
         self._opt_dpx = opt_dpx
+        self._opt_non_retime = opt_non_retime
 
         self.create_seq()
         self.create_shot()
@@ -194,6 +195,7 @@ class Publish:
         if self.seq_type == "org":
             self.update_shot_info()
         self.publish_to_shotgun()
+        self.publish_temp_jpg()
 
         self.nuke_retime_script = self.create_nuke_retime_script()
         self.nuke_script = self.create_nuke_script()
@@ -322,6 +324,64 @@ class Publish:
         else:
             self.create_copy_job()
 
+    def publish_temp_jpg(self):
+        if self._opt_non_retime == False:
+            return
+        else:
+            context = sgtk.Context(self._app.tank, project=self.project,
+                                   entity=self.shot_ent,
+                                   step=None,
+                                   task=None,
+                                   user=self.user)
+
+            file_name = self.shot_name + "_tmp_v%03d" % self.version
+            temp_jpg_dir = self.tmp_path.split('/')[:-1]
+            temp_jpg_path = os.path.join('/'.join(temp_jpg_dir), "v%03d_jpg" % self.version)
+            published_file = os.path.join(temp_jpg_path, file_name + ".%04d.jpg")
+            published_name = os.path.basename(published_file)
+
+            key = [
+                ['project', 'is', self.project],
+                ['entity', 'is', self.shot_ent],
+                ["published_file_type", "is", self.published_file_type],
+                ['name', 'is', published_name],
+                ['version_number', 'is', int(self.version)]
+            ]
+            self.published_ent = self._sg.find_one("PublishedFile", key, ['version_number'])
+
+            desc = {
+                "version": self.version_ent,
+                "sg_colorspace": self.scan_colorspace
+            }
+
+            if self.published_ent and self._opt_dpx == False:
+                self._sg.update("PublishedFile", self.published_ent['id'], desc)
+                return
+
+            desc = {
+                "version": self.version_ent,
+                "sg_colorspace": self.scan_colorspace
+            }
+
+
+            publish_data = {
+                "tk": self._app.tank,
+                "context": context,
+                "path": published_file,
+                "name": published_name,
+                "created_by": self.user,
+                "version_number": self.version,
+                # "thumbnail_path": item.get_thumbnail_as_path(),
+                "published_file_type": 'Plate',
+                # "dependency_paths": publish_dependencies
+            }
+
+            self.published_ent = sgtk.util.register_publish(**publish_data)
+
+            self._sg.update("PublishedFile", self.published_ent['id'], desc)
+
+
+
     def create_temp_job(self):
 
         if not self.master_input.retime_job:
@@ -342,8 +402,25 @@ class Publish:
             cmd.append(os.path.join(self.tmp_path, self.plate_file_name + "." + str(1000 + index + 1) + "." + file_ext))
             command = author.Command(argv=cmd)
             self.copy_task.addCommand(command)
+        if self._opt_non_retime == True:
+            self.copy_jpg_task = author.Task(title="copy temp jpg")
+            file_name = self.shot_name + "_tmp_v%03d" % self.version
+            read_path = os.path.join(self.tmp_path, file_name + ".%4d." + file_ext)
+            tmp_org_jpg_script = self.create_nuke_temp_script(read_path)
 
-        self.job.addChild(self.copy_task)
+            if not self.scan_colorspace.find("ACES") == -1:
+                cmd = ['rez-env', 'nuke-11', 'ocio_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
+            if not self.scan_colorspace.find("Alexa") == -1:
+                cmd = ['rez-env', 'nuke-11', 'alexa_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
+            if not self.scan_colorspace.find("legacy") == -1:
+                cmd = ['rez-env', 'nuke-11', 'legacy_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
+
+            command = author.Command(argv=cmd)
+            self.copy_jpg_task.addCommand(command)
+            self.copy_jpg_task.addChild(self.copy_task)
+            self.job.addChild(self.copy_jpg_task)
+        else:
+            self.job.addChild(self.copy_task)
 
     def _create_copy_script(self):
         scan_path = self.master_input.scan_path
@@ -652,6 +729,32 @@ class Publish:
         user = os.environ['USER']
         self.job.spool(hostname="10.0.20.81", owner=user)
 
+    def create_nuke_temp_script(self, read_path):
+        width, height = self.master_input.resolution.split("x")
+        temp_jpg_dir = self.tmp_path.split('/')[:-1]
+        temp_jpg_path = os.path.join('/'.join(temp_jpg_dir), "v%03d_jpg" % self.version)
+        file_name = self.shot_name + "_tmp_v%03d" % self.version
+        output_path = os.path.join(temp_jpg_path, file_name + ".%04d.jpg")
+        in_color = self.scan_colorspace
+        out_color = colorspace_set[in_color]
+        tmp_org_jpg_file = os.path.join(self._app.sgtk.project_path, 'seq',
+                                        self.seq_name,
+                                        self.shot_name, "plate",
+                                        self.plate_file_name + "_tmp_jpg.py")
+
+        nk = ''
+        nk += self.create_dpx_to_output_script(1001, 1000 + len(self.copy_file_list), read_path, output_path,
+                                               in_color, out_color, width, '')
+        if not os.path.exists(os.path.dirname(tmp_org_jpg_file)):
+            cur_umask = os.umask(0)
+            os.makedirs(os.path.dirname(tmp_org_jpg_file), 0777)
+            os.umask(cur_umask)
+        with open(tmp_org_jpg_file, 'w') as f:
+            f.write(nk)
+
+        print tmp_org_jpg_file
+        return tmp_org_jpg_file
+
     def create_nuke_retime_script(self):
 
         app = sgtk.platform.current_bundle()
@@ -858,23 +961,24 @@ class Publish:
         nk += 'write["_jpeg_quality"].setValue(1.0)\n'
         nk += 'write["_jpeg_sub_sampling"].setValue("4:4:4")\n'
         nk += 'nuke.execute(write, {}, {}, 1)\n'.format(start_frame, end_frame)
-        if int(width) > 2048:
-            nk += 'reformat = reformat = nuke.nodes.Reformat(inputs=[%s],type=2,scale=.5)\n' % tg
-            reformat = 'reformat'
-        nk += 'output = "{}"\n'.format(mov_path)
-        if int(width) > 2048:
-            nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n' % reformat
-        else:
-            nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n' % tg
-        nk += 'write["file_type"].setValue( "mov" )\n'
-        nk += 'write["create_directories"].setValue(True)\n'
-        nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
-        nk += 'write["colorspace"].setValue("{}")\n'.format(output_color)
-        nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
-        # nk += 'write["colorspace"].setValue( "Cineon" )\n'
-        # nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
-        nk += 'nuke.execute(write,{},{},1)\n'.format(start_frame, end_frame)
-        nk += 'exit()\n'
+        if self._opt_non_retime == False:
+            if int(width) > 2048:
+                nk += 'reformat = reformat = nuke.nodes.Reformat(inputs=[%s],type=2,scale=.5)\n' % tg
+                reformat = 'reformat'
+            nk += 'output = "{}"\n'.format(mov_path)
+            if int(width) > 2048:
+                nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n' % reformat
+            else:
+                nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n' % tg
+            nk += 'write["file_type"].setValue( "mov" )\n'
+            nk += 'write["create_directories"].setValue(True)\n'
+            nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
+            nk += 'write["colorspace"].setValue("{}")\n'.format(output_color)
+            nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
+            # nk += 'write["colorspace"].setValue( "Cineon" )\n'
+            # nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
+            nk += 'nuke.execute(write,{},{},1)\n'.format(start_frame, end_frame)
+            nk += 'exit()\n'
         return nk
 
     def create_nuke_script(self):
@@ -1229,9 +1333,8 @@ class Publish:
 
     @property
     def plate_jpg_path(self):
-
         temp = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name,
-                            self.shot_name, "plate", self.seq_type, "v%03d_jpg" % self.version)
+                                self.shot_name, "plate", self.seq_type, "v%03d_jpg" % self.version)
         return temp
 
     @property
@@ -1246,11 +1349,6 @@ class Publish:
 
         temp = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name,
                             self.shot_name, "plate", self.seq_type, "v%03d_jpg_2k" % self.version)
-        return temp
-
-    @property
-    def plate_file_name(self):
-        temp = self.shot_name + "_" + self.seq_type + "_v%03d" % self.version
         return temp
 
     @property
