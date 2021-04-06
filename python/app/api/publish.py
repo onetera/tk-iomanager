@@ -292,6 +292,9 @@ class Publish:
         self._sg.update("Shot", self.shot_ent['id'], desc)
 
     def create_org_job(self):
+        if self._opt_non_retime == True and os.path.exists(self.plate_path):
+            return None
+
         if self.master_input.retime_job:
             self.org_task = author.Task(title="create org")
             cmd = ['rez-env', 'nuke-11', '--', 'nuke', '-ix', self.nuke_retime_script]
@@ -334,9 +337,9 @@ class Publish:
                                    task=None,
                                    user=self.user)
 
-            file_name = self.shot_name + "_tmp_v%03d" % self.version
             temp_jpg_dir = self.tmp_path.split('/')[:-1]
-            temp_jpg_path = os.path.join('/'.join(temp_jpg_dir), "v%03d_jpg" % self.version)
+            temp_jpg_path = os.path.join('/'.join(temp_jpg_dir), "v%03d_non_retime_jpg" % self.version)
+            file_name = self.shot_name + "_tmp_non_retime_v%03d" % self.version
             published_file = os.path.join(temp_jpg_path, file_name + ".%04d.jpg")
             published_name = os.path.basename(published_file)
 
@@ -404,7 +407,11 @@ class Publish:
             self.copy_task.addCommand(command)
         if self._opt_non_retime == True:
             self.copy_jpg_task = author.Task(title="copy temp jpg")
-            read_path = os.path.join(self.tmp_path, self.plate_file_name + ".%4d." + file_ext)
+            temp_path = '{}'.format(self.tmp_path)
+            temp_path = temp_path.replace('v%03d'%self.version, 'v001')
+            file_name = '{}'.format(self.plate_file_name)
+            file_name = file_name.replace('v%03d'%self.version, 'v001')
+            read_path = os.path.join(temp_path, file_name + ".%4d." + file_ext)
             tmp_org_jpg_script = self.create_nuke_temp_script(read_path)
 
             if not self.scan_colorspace.find("ACES") == -1:
@@ -416,9 +423,14 @@ class Publish:
 
             command = author.Command(argv=cmd)
             self.copy_jpg_task.addCommand(command)
-            if not os.path.exists(self.tmp_path):
+            if not os.path.exists(temp_path):
                 self.copy_jpg_task.addChild(self.copy_task)
-            self.job.addChild(self.copy_jpg_task)
+            cmd = ['rm', '-f', tmp_org_jpg_script]
+            tmp_rm_jpg_task = author.Task(title='rm tmp jpg')
+            command = author.Command(argv=cmd)
+            tmp_rm_jpg_task.addCommand(command)
+            tmp_rm_jpg_task.addChild(self.copy_jpg_task)
+            self.job.addChild(tmp_rm_jpg_task)
         else:
             self.job.addChild(self.copy_task)
 
@@ -527,6 +539,8 @@ class Publish:
         return
 
     def create_jpg_job(self):
+        if self._opt_non_retime == True and os.path.exists(self.plate_path):
+            return None
 
         self.jpg_task = author.Task(title="render jpg")
         cmd = ['rez-env', 'nuke-11', '--', 'nuke', '-ix', self.nuke_script]
@@ -553,6 +567,8 @@ class Publish:
         self.mp4_task.addChild(self.jpg_task)
 
     def convert_mp4_job(self):
+        if self._opt_non_retime == True and os.path.exists(self.plate_path):
+            return None
 
         self.mp4_task = author.Task(title="render mp4")
         mov_path = os.path.join(self._app.sgtk.project_path, 'seq',
@@ -668,7 +684,8 @@ class Publish:
         self.sg_task.addChild(self.mp4_task)
 
     def create_sg_job(self):
-
+        if self._opt_non_retime == True and os.path.exists(self.plate_path):
+            return None
         self.sg_task = author.Task(title="sg version")
         cmd = ['rez-env', 'shotgunapi', '--', 'python', self.sg_script]
         command = author.Command(argv=cmd)
@@ -676,7 +693,8 @@ class Publish:
         self.rm_task.addChild(self.sg_task)
 
     def create_rm_job(self):
-
+        if self._opt_non_retime == True and os.path.exists(self.plate_path):
+            return None
         montage_path = os.path.join(self._app.sgtk.project_path, 'seq',
                                     self.seq_name,
                                     self.shot_name, "plate",
@@ -732,8 +750,8 @@ class Publish:
     def create_nuke_temp_script(self, read_path):
         width, height = self.master_input.resolution.split("x")
         temp_jpg_dir = self.tmp_path.split('/')[:-1]
-        temp_jpg_path = os.path.join('/'.join(temp_jpg_dir), "v%03d_jpg" % self.version)
-        file_name = self.shot_name + "_tmp_v%03d" % self.version
+        temp_jpg_path = os.path.join('/'.join(temp_jpg_dir), "v%03d_non_retime_jpg" % self.version)
+        file_name = self.shot_name + "_tmp_non_retime_v%03d" % self.version
         output_path = os.path.join(temp_jpg_path, file_name + ".%04d.jpg")
         in_color = self.scan_colorspace
         out_color = colorspace_set[in_color]
@@ -756,7 +774,8 @@ class Publish:
         return tmp_org_jpg_file
 
     def create_nuke_retime_script(self):
-
+        if self._opt_non_retime == True and os.path.exists(self.plate_path):
+            return None
         app = sgtk.platform.current_bundle()
         context = app.context
         project = context.project
@@ -840,6 +859,8 @@ class Publish:
         return tmp_nuke_script_file
 
     def create_mov_nuke_script(self):
+        if self._opt_non_retime == True and os.path.exists(self.plate_path):
+            return None
 
         if not self.master_input.ext == "mov":
             return
@@ -982,7 +1003,8 @@ class Publish:
         return nk
 
     def create_nuke_script(self):
-
+        if self._opt_non_retime == True and os.path.exists(self.plate_path):
+            return None
         width, height = self.master_input.resolution.split("x")
 
         if self.master_input.retime_job:
@@ -1195,7 +1217,8 @@ class Publish:
         return tmp_nuke_script_file
 
     def create_sg_script(self):
-
+        if self._opt_non_retime == True and os.path.exists(self.plate_path):
+            return None
         tmp_sg_script_file = os.path.join(self._app.sgtk.project_path, 'seq',
                                           self.seq_name,
                                           self.shot_name, "plate",
@@ -1374,6 +1397,8 @@ class Publish:
         pass
 
     def publish_to_shotgun(self):
+        if self._opt_non_retime == True and os.path.exists(self.plate_path):
+            return None
 
         context = sgtk.Context(self._app.tank, project=self.project,
                                entity=self.shot_ent,
