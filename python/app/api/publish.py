@@ -408,9 +408,11 @@ class Publish:
         if self._opt_non_retime == True:
             self.copy_jpg_task = author.Task(title="copy temp jpg")
             temp_path = '{}'.format(self.tmp_path)
-            temp_path = temp_path.replace('v%03d'%self.version, 'v001')
+            ver_dirs = [dir_name for dir_name in os.listdir(temp_path) if '_jpg' not in dir_name]
+            ver_nums = [int(num[1:]) for num in ver_dirs]
+            temp_path = temp_path.replace('v%03d'%self.version, 'v%03d'%max(ver_nums))
             file_name = '{}'.format(self.plate_file_name)
-            file_name = file_name.replace('v%03d'%self.version, 'v001')
+            file_name = file_name.replace('v%03d'%self.version, 'v%03d'%max(ver_nums))
             read_path = os.path.join(temp_path, file_name + ".%4d." + file_ext)
             tmp_org_jpg_script = self.create_nuke_temp_script(read_path)
 
