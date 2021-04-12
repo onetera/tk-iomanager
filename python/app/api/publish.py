@@ -329,7 +329,7 @@ class Publish:
 
     def publish_temp_jpg(self):
         if self._opt_non_retime == False:
-            return
+            return None
         else:
             context = sgtk.Context(self._app.tank, project=self.project,
                                    entity=self.shot_ent,
@@ -337,9 +337,9 @@ class Publish:
                                    task=None,
                                    user=self.user)
 
-            temp_jpg_dir = self.tmp_path.split('/')[:-1]
-            temp_jpg_path = os.path.join('/'.join(temp_jpg_dir), "v%03d_non_retime_jpg" % self.version)
-            file_name = self.shot_name + "_tmp_non_retime_v%03d" % self.version
+            temp_jpg_dir = self.plate_path.split('/')[:-1]
+            temp_jpg_path = os.path.join('/'.join(temp_jpg_dir), "v%03d_jpg" %(self.version+1))
+            file_name = self.plate_file_name.replace('v%03d'%self.version, 'v%03d'%(self.version+1))
             published_file = os.path.join(temp_jpg_path, file_name + ".%04d.jpg")
             published_name = os.path.basename(published_file)
 
@@ -386,34 +386,29 @@ class Publish:
 
 
     def create_temp_job(self):
-
-        if not self.master_input.retime_job:
-            return
+        if self._opt_non_retime == False and not self.master_input.retime_job:
+            return None
 
         scan_path = self.master_input.scan_path
         file_ext = self.master_input.ext
 
         self.copy_task = author.Task(title="copy temp")
         cmd = ["/bin/mkdir", "-p"]
-        cmd.append(self.tmp_path)
+        temp_path = self.plate_path.replace('v%03d'%self.version, 'v%03d'%(self.version+1))
+        temp_name = self.plate_file_name.replace('v%03d'%self.version, 'v%03d'%(self.version+1))
+        cmd.append(temp_path)
         command = author.Command(argv=cmd)
         self.copy_task.addCommand(command)
 
         for index in range(0, len(self.copy_file_list)):
             cmd = ["/bin/cp", "-fv"]
             cmd.append(os.path.join(scan_path, self.copy_file_list[index]))
-            cmd.append(os.path.join(self.tmp_path, self.plate_file_name + "." + str(1000 + index + 1) + "." + file_ext))
+            cmd.append(os.path.join(temp_path, temp_name + "." + str(1000 + index + 1) + "." + file_ext))
             command = author.Command(argv=cmd)
             self.copy_task.addCommand(command)
         if self._opt_non_retime == True:
             self.copy_jpg_task = author.Task(title="copy temp jpg")
-            temp_path = '{}'.format(self.tmp_path)
-            ver_dirs = [dir_name for dir_name in os.listdir(temp_path) if '_jpg' not in dir_name]
-            ver_nums = [int(num[1:]) for num in ver_dirs]
-            temp_path = temp_path.replace('v%03d'%self.version, 'v%03d'%max(ver_nums))
-            file_name = '{}'.format(self.plate_file_name)
-            file_name = file_name.replace('v%03d'%self.version, 'v%03d'%max(ver_nums))
-            read_path = os.path.join(temp_path, file_name + ".%4d." + file_ext)
+            read_path = os.path.join(temp_path, temp_name + ".%4d." + file_ext)
             tmp_org_jpg_script = self.create_nuke_temp_script(read_path)
 
             if not self.scan_colorspace.find("ACES") == -1:
@@ -434,7 +429,7 @@ class Publish:
             tmp_rm_jpg_task.addChild(self.copy_jpg_task)
             self.job.addChild(tmp_rm_jpg_task)
         else:
-            self.job.addChild(self.copy_task)
+            self.job.addChild()
 
     def _create_copy_script(self):
         scan_path = self.master_input.scan_path
@@ -751,16 +746,15 @@ class Publish:
 
     def create_nuke_temp_script(self, read_path):
         width, height = self.master_input.resolution.split("x")
-        temp_jpg_dir = self.tmp_path.split('/')[:-1]
-        temp_jpg_path = os.path.join('/'.join(temp_jpg_dir), "v%03d_non_retime_jpg" % self.version)
-        file_name = self.shot_name + "_tmp_non_retime_v%03d" % self.version
+        temp_jpg_path = self.plate_path.replace('v%03d'%self.version, 'v%03d_jpg'%(self.version+1))
+        file_name = self.plate_file_name.replace('v%03d'%self.version, 'v%03d'%(self.version+1))
         output_path = os.path.join(temp_jpg_path, file_name + ".%04d.jpg")
         in_color = self.scan_colorspace
         out_color = colorspace_set[in_color]
         tmp_org_jpg_file = os.path.join(self._app.sgtk.project_path, 'seq',
                                         self.seq_name,
                                         self.shot_name, "plate",
-                                        self.plate_file_name + "_tmp_jpg.py")
+                                        self.plate_file_name + "_nonretime_jpg.py")
 
         nk = ''
         nk += self.create_dpx_to_output_script(1001, 1000 + len(self.copy_file_list), read_path, output_path,
