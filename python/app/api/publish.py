@@ -429,7 +429,7 @@ class Publish:
             tmp_rm_jpg_task.addChild(self.copy_jpg_task)
             self.job.addChild(tmp_rm_jpg_task)
         else:
-            self.job.addChild()
+            self.job.addChild(self.copy_task)
 
     def _create_copy_script(self):
         scan_path = self.master_input.scan_path
