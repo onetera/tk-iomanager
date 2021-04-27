@@ -419,29 +419,32 @@ class Publish:
         temp_path = self.plate_path.replace('v%03d' % self.version, 'v%03d' % (self.version + 1))
         temp_name = self.plate_file_name.replace('v%03d' % self.version, 'v%03d' % (self.version + 1))
 
-        if not os.path.exists(temp_path+'/'+temp_name+'.1001.'+self.master_input.ext):
-            self.copy_task = author.Task(title="copy temp")
-            cmd = ["/bin/mkdir", "-p"]
+        trigger = False
+        file_list = self.copy_file_list
+        if os.path.exists(self.tmp_path+'/'+self.plate_file_name+'.1001.'+file_ext):
+            trigger = True
+            file_list = os.listdir(self.tmp_path)
+
+        self.copy_task = author.Task(title="copy temp")
+        cmd = ["/bin/mkdir", "-p"]
+        if trigger == True:
             cmd.append(temp_path)
+        else:
+            cmd.append(self.tmp_path)
+        command = author.Command(argv=cmd)
+        self.copy_task.addCommand(command)
+
+        for index in range(0, len(file_list)):
+            cmd = ["/bin/cp", "-fv"]
+            frame_number = str(1000 + index + 1)
+            if trigger == True:
+                cmd.append(os.path.join(self.tmp_path, self.plate_file_name+'.{}.{}'.format(frame_number, file_ext)))
+                cmd.append(os.path.join(temp_path, temp_name+'.{}.{}'.format(frame_number, file_ext)))
+            else:
+                cmd.append(os.path.join(self.master_input.scan_path, self.copy_file_list[index]))
+                cmd.append(os.path.join(self.tmp_path, self.plate_file_name + ".{}.{}".format(frame_number, file_ext)))
             command = author.Command(argv=cmd)
             self.copy_task.addCommand(command)
-
-            trigger = False
-            file_list = self.copy_file_list
-            if os.path.exists(self.tmp_path+'/'+self.plate_file_name+'.1001.'+file_ext):
-                trigger = True
-                file_list = os.listdir(self.tmp_path)
-
-            for index in range(0, len(file_list)):
-                cmd = ["/bin/cp", "-fv"]
-                frame_number = str(1000 + index + 1)
-                if trigger == True:
-                    cmd.append(os.path.join(self.tmp_path, self.plate_file_name+'.{}.{}'.format(frame_number, file_ext)))
-                else:
-                    cmd.append(os.path.join(self.master_input.scan_path, self.copy_file_list[index]))
-                cmd.append(os.path.join(temp_path, temp_name + ".{}.{}".format(frame_number, file_ext)))
-                command = author.Command(argv=cmd)
-                self.copy_task.addCommand(command)
         if self._opt_non_retime == True:
             self._create_temp_jpg_job(temp_path, temp_name)
         else:
