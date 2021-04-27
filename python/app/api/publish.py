@@ -521,7 +521,7 @@ class Publish:
             version_type = "src"
 
         plate_seq_path = self.plate_path.replace('v%03d'%self.version, 'v%03d'%version)
-        plate_name = self.shot_name + "_" + self.seq_type + "_v%03d" % version
+        plate_name = self.shot_name + "_" + self.seq_type + "_v%03d.mov" % version
         mov_path = os.path.join(self._app.sgtk.project_path, 'seq',
                                 self.seq_name,
                                 self.shot_name, "plate",
