@@ -201,13 +201,16 @@ class Publish:
         self.nuke_script = self.create_nuke_script()
         self.nuke_mov_script = self.create_mov_nuke_script()
         self.sg_script = self.create_sg_script()
+        if self._opt_non_retime == True:
+            self.sg_nonretime_script = self.create_sg_script(switch=True)
         # self.copy_script = self._create_copy_script()
 
         self.create_job()
         self.create_temp_job()
+        self.convert_mp4_job(switch=True)
         self.create_rm_job()
         self.create_sg_job()
-        self.convert_mp4_job()
+        self.convert_mp4_job(switch=False)
         self.create_jpg_job()
         self.create_org_job()
         self.submit_job()
@@ -350,19 +353,19 @@ class Publish:
                 ['name', 'is', published_name],
                 ['version_number', 'is', int(self.version)]
             ]
-            self.published_ent = self._sg.find_one("PublishedFile", key, ['version_number'])
+            self.published_tmp_ent = self._sg.find_one("PublishedFile", key, ['version_number'])
 
             desc = {
-                "version": self.version_ent,
+                "version": self.version_tmp_ent,
                 "sg_colorspace": self.scan_colorspace
             }
 
-            if self.published_ent and self._opt_dpx == False:
-                self._sg.update("PublishedFile", self.published_ent['id'], desc)
+            if self.published_tmp_ent and self._opt_dpx == False:
+                self._sg.update("PublishedFile", self.published_tmp_ent['id'], desc)
                 return
 
             desc = {
-                "version": self.version_ent,
+                "version": self.version_tmp_ent,
                 "sg_colorspace": self.scan_colorspace
             }
 
@@ -379,55 +382,71 @@ class Publish:
                 # "dependency_paths": publish_dependencies
             }
 
-            self.published_ent = sgtk.util.register_publish(**publish_data)
+            self.published_tmp_ent = sgtk.util.register_publish(**publish_data)
 
-            self._sg.update("PublishedFile", self.published_ent['id'], desc)
+            self._sg.update("PublishedFile", self.published_tmp_ent['id'], desc)
 
+    def _create_temp_jpg_job(self, temp_path, temp_name):
+        self.copy_jpg_task = author.Task(title="copy temp jpg")
+        read_path = os.path.join(temp_path, temp_name + ".%04d." + self.master_input.ext)
+        tmp_org_jpg_script = self.create_nuke_temp_script(read_path)
 
+        if not self.scan_colorspace.find("ACES") == -1:
+            cmd = ['rez-env', 'nuke-11', 'ocio_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
+        if not self.scan_colorspace.find("Alexa") == -1:
+            cmd = ['rez-env', 'nuke-11', 'alexa_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
+        if not self.scan_colorspace.find("legacy") == -1:
+            cmd = ['rez-env', 'nuke-11', 'legacy_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
+
+        command = author.Command(argv=cmd)
+        self.copy_jpg_task.addCommand(command)
+        if not os.path.exists(temp_path+'/'+temp_name+'.1001.'+self.master_input.ext):
+            self.copy_jpg_task.addChild(self.copy_task)
+        cmd = ['rm', '-f', tmp_org_jpg_script]
+        self.tmp_rm_jpg_task = author.Task(title='rm tmp jpg')
+        command = author.Command(argv=cmd)
+        self.tmp_rm_jpg_task.addCommand(command)
+        cmd = ['rm', '-rf', self.tmp_path]
+        command = author.Command(argv=cmd)
+        self.tmp_rm_jpg_task.addCommand(command)
+        self.tmp_rm_jpg_task.addChild(self.copy_jpg_task)
 
     def create_temp_job(self):
         if self._opt_non_retime == False and not self.master_input.retime_job:
             return None
 
-        scan_path = self.master_input.scan_path
         file_ext = self.master_input.ext
+        temp_path = self.plate_path.replace('v%03d' % self.version, 'v%03d' % (self.version + 1))
+        temp_name = self.plate_file_name.replace('v%03d' % self.version, 'v%03d' % (self.version + 1))
+
+        trigger = False
+        file_list = self.copy_file_list
+        if os.path.exists(self.tmp_path+'/'+self.plate_file_name+'.1001.'+file_ext):
+            trigger = True
+            file_list = os.listdir(self.tmp_path)
 
         self.copy_task = author.Task(title="copy temp")
         cmd = ["/bin/mkdir", "-p"]
-        temp_path = self.plate_path.replace('v%03d'%self.version, 'v%03d'%(self.version+1))
-        temp_name = self.plate_file_name.replace('v%03d'%self.version, 'v%03d'%(self.version+1))
-        cmd.append(temp_path)
+        if trigger == True:
+            cmd.append(temp_path)
+        else:
+            cmd.append(self.tmp_path)
         command = author.Command(argv=cmd)
         self.copy_task.addCommand(command)
 
-        for index in range(0, len(self.copy_file_list)):
+        for index in range(0, len(file_list)):
             cmd = ["/bin/cp", "-fv"]
-            cmd.append(os.path.join(scan_path, self.copy_file_list[index]))
-            cmd.append(os.path.join(temp_path, temp_name + "." + str(1000 + index + 1) + "." + file_ext))
+            frame_number = str(1000 + index + 1)
+            if trigger == True:
+                cmd.append(os.path.join(self.tmp_path, self.plate_file_name+'.{}.{}'.format(frame_number, file_ext)))
+                cmd.append(os.path.join(temp_path, temp_name+'.{}.{}'.format(frame_number, file_ext)))
+            else:
+                cmd.append(os.path.join(self.master_input.scan_path, self.copy_file_list[index]))
+                cmd.append(os.path.join(self.tmp_path, self.plate_file_name + ".{}.{}".format(frame_number, file_ext)))
             command = author.Command(argv=cmd)
             self.copy_task.addCommand(command)
         if self._opt_non_retime == True:
-            self.copy_jpg_task = author.Task(title="copy temp jpg")
-            read_path = os.path.join(temp_path, temp_name + ".%4d." + file_ext)
-            tmp_org_jpg_script = self.create_nuke_temp_script(read_path)
-
-            if not self.scan_colorspace.find("ACES") == -1:
-                cmd = ['rez-env', 'nuke-11', 'ocio_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
-            if not self.scan_colorspace.find("Alexa") == -1:
-                cmd = ['rez-env', 'nuke-11', 'alexa_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
-            if not self.scan_colorspace.find("legacy") == -1:
-                cmd = ['rez-env', 'nuke-11', 'legacy_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
-
-            command = author.Command(argv=cmd)
-            self.copy_jpg_task.addCommand(command)
-            if not os.path.exists(temp_path):
-                self.copy_jpg_task.addChild(self.copy_task)
-            cmd = ['rm', '-f', tmp_org_jpg_script]
-            tmp_rm_jpg_task = author.Task(title='rm tmp jpg')
-            command = author.Command(argv=cmd)
-            tmp_rm_jpg_task.addCommand(command)
-            tmp_rm_jpg_task.addChild(self.copy_jpg_task)
-            self.job.addChild(tmp_rm_jpg_task)
+            self._create_temp_jpg_job(temp_path, temp_name)
         else:
             self.job.addChild(self.copy_task)
 
@@ -482,7 +501,15 @@ class Publish:
 
         self.jpg_task.addChild(self.copy_task)
 
-    def create_version(self):
+    def create_version(self, switch=False):
+        version = self.version
+
+        ver_path = self.plate_path+'/'+self.plate_file_name+'.1001.'+self.master_input.ext
+        print "==== version path ===="
+        print ver_path
+        print "======================"
+        if switch == True or os.path.exists(ver_path):
+            version += 1
 
         if self.seq_type == "org":
             version_type = "org"
@@ -493,13 +520,14 @@ class Publish:
         else:
             version_type = "src"
 
+        plate_seq_path = self.plate_path.replace('v%03d'%self.version, 'v%03d'%version)
+        plate_name = self.shot_name + "_" + self.seq_type + "_v%03d" % version
         mov_path = os.path.join(self._app.sgtk.project_path, 'seq',
                                 self.seq_name,
                                 self.shot_name, "plate",
-                                self.plate_file_name + ".mov")
+                                plate_name + ".mov")
 
-        mov_name = self.plate_file_name + ".mov"
-        read_path = os.path.join(self.plate_path, self.plate_file_name + ".%04d." + self.file_ext)
+        read_path = os.path.join(plate_seq_path, plate_name + ".%04d." + self.file_ext)
         if self.master_input.ext == "mov":
             colorspace = self.scan_colorspace.replace("ACES-", "")
             read_path = os.path.join(self._app.sgtk.project_path, 'seq',
@@ -509,14 +537,14 @@ class Publish:
 
         key = [
             ['entity', 'is', self.shot_ent],
-            ['code', 'is', mov_name]
+            ['code', 'is', plate_name]
         ]
 
         if self._opt_dpx == True:
             read_path = os.path.join(self.plate_path, self.plate_file_name + ".%04d.dpx")
         desc = {
             "project": self.project,
-            "code": mov_name,
+            "code": plate_name,
             "sg_status_list": "fin",
             'entity': self.shot_ent,
             "sg_path_to_movie": mov_path,
@@ -529,11 +557,33 @@ class Publish:
         if self._sg.find_one("Version", key):
             self.version_ent = self._sg.find_one("Version", key)
             self._sg.update("Version", self.version_ent['id'], desc)
-            return
+            print "found the existed version with switch false"
+            if switch == True:
+                self.version_tmp_ent = self._sg.find_one('Version', key)
+                self._sg.update("Version", self.version_tmp_ent['id'], desc)
+                print "found the existed version with switch true"
 
-        self.version_ent = self._sg.create("Version", desc)
+            if switch == True:
+                print "===== version for retime ====="
+                print self.version_ent
+                print
+                print self.version_tmp_ent
+                print "=============================="
+            if self._opt_non_retime == True and switch == False:
+                print "found the existed version with switch false and nonretime true"
+                return self.create_version(switch=True)
+            return None
 
-        return
+        if switch == False:
+            self.version_ent = self._sg.create("Version", desc)
+            print "created a new version with swiwtch false"
+        else:
+            self.version_tmp_ent = self._sg.create('Version', desc)
+            print "created a new version with swiwtch false"
+        if self._opt_non_retime == True and switch == False:
+            print "created a new version with swiwtch false and nonretime true"
+            return self.create_version(switch=True)
+        return None
 
     def create_jpg_job(self):
         if self._opt_non_retime == True and os.path.exists(self.plate_path):
@@ -563,25 +613,25 @@ class Publish:
         self.jpg_task.addCommand(command)
         self.mp4_task.addChild(self.jpg_task)
 
-    def convert_mp4_job(self):
-        if self._opt_non_retime == True and os.path.exists(self.plate_path):
+    def convert_mp4_job(self, switch=False):
+        if switch == True and self._opt_non_retime == True:
+            self.nonretime_mp4_task = author.Task(title='render nonretimed mp4')
+        elif switch == True and self._opt_non_retime == False:
             return None
+        else:
+            self.mp4_task = author.Task(title="render mp4")
+        version = self.version
+        if switch == True:
+            version += 1
 
-        self.mp4_task = author.Task(title="render mp4")
-        mov_path = os.path.join(self._app.sgtk.project_path, 'seq',
-                                self.seq_name,
-                                self.shot_name, "plate",
-                                self.plate_file_name + ".mov")
+        file_name = self.plate_file_name.replace('v%03d'%self.version, 'v%03d'%version)
+        mov_path = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
+                                file_name + ".mov")
+        mp4_path = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
+                                file_name + ".mp4")
+        webm_path = self.webm_path.replace(self.plate_file_name+'.webm', file_name+'.webm')
 
-        mp4_path = os.path.join(self._app.sgtk.project_path, 'seq',
-                                self.seq_name,
-                                self.shot_name, "plate",
-                                self.plate_file_name + ".mp4")
-
-        webm_path = os.path.join(self._app.sgtk.project_path, 'seq',
-                                 self.seq_name,
-                                 self.shot_name, "plate",
-                                 self.plate_file_name + ".webm")
+        montage_path = self.montage_path.replace(self.plate_file_name + "stream.jpeg", file_name+"stream.jpeg")
 
         command = ['rez-env', 'ffmpeg', '--', 'ffmpeg', '-y']
         command.append("-i")
@@ -600,7 +650,10 @@ class Publish:
         command.append("pad='ceil(iw/2)*2:ceil(ih/2)*2'")
         command.append(mp4_path)
         command = author.Command(argv=command)
-        self.mp4_task.addCommand(command)
+        if switch == True and self._opt_non_retime == True:
+            self.nonretime_mp4_task.addCommand(command)
+        else:
+            self.mp4_task.addCommand(command)
 
         command = ['rez-env', 'ffmpeg', '--', 'ffmpeg', '-y']
         command.append("-i")
@@ -625,11 +678,17 @@ class Publish:
         command.append("pad='ceil(iw/2)*2:ceil(ih/2)*2'")
         command.append(webm_path)
         command = author.Command(argv=command)
-        self.mp4_task.addCommand(command)
+        if switch == True and self._opt_non_retime == True:
+            self.nonretime_mp4_task.addCommand(command)
+        else:
+            self.mp4_task.addCommand(command)
 
-        montage_template = os.path.join(self.montage_jpg_path, self.plate_file_name + ".%04d.jpg")
-        if not os.path.exists(self.montage_jpg_path):
-            os.makedirs(self.montage_jpg_path)
+        before_change = "%s_v%03d_jpg" % (self.seq_type, self.version)
+        _montage_jpg_path = self.montage_jpg_path.replace(before_change, "%s_v%03d_jpg" % (self.seq_type, version))
+        montage_template = os.path.join(_montage_jpg_path, self.plate_file_name + ".%04d.jpg")
+        montage_template = montage_template.replace(self.plate_file_name+".%04d.jpg", file_name+".%04d.jpg")
+        if not os.path.exists(_montage_jpg_path):
+            os.makedirs(_montage_jpg_path)
 
         select_code = (int(self.master_input.just_out) - int(self.master_input.just_in)) / 30
 
@@ -654,14 +713,12 @@ class Publish:
         command.append("image2")
         command.append(montage_template)
         command = author.Command(argv=command)
-        self.mp4_task.addCommand(command)
+        if switch == True and self._opt_non_retime == True:
+            self.nonretime_mp4_task.addCommand(command)
+        else:
+            self.mp4_task.addCommand(command)
 
-        montage_path = os.path.join(self._app.sgtk.project_path, 'seq',
-                                    self.seq_name,
-                                    self.shot_name, "plate",
-                                    self.plate_file_name + "stream.jpeg")
-
-        montage_template = os.path.join(self.montage_jpg_path, self.plate_file_name + ".*")
+        montage_template = os.path.join(_montage_jpg_path, file_name + ".*")
 
         command = ['montage']
         command.append(montage_template)
@@ -676,31 +733,46 @@ class Publish:
         command.append(montage_path)
 
         command = author.Command(argv=command)
-        self.mp4_task.addCommand(command)
+        if switch == True and self._opt_non_retime == True:
+            self.nonretime_mp4_task.addCommand(command)
+        else:
+            self.mp4_task.addCommand(command)
 
-        self.sg_task.addChild(self.mp4_task)
+        if self._opt_non_retime == True and switch == True:
+            self.nonretime_mp4_task.addChild(self.tmp_rm_jpg_task)
+        else:
+            self.sg_task.addChild(self.mp4_task)
 
     def create_sg_job(self):
-        if self._opt_non_retime == True and os.path.exists(self.plate_path):
-            return None
         self.sg_task = author.Task(title="sg version")
         cmd = ['rez-env', 'shotgunapi', '--', 'python', self.sg_script]
         command = author.Command(argv=cmd)
         self.sg_task.addCommand(command)
+        if self._opt_non_retime == True:
+            self.sg_nonretime_task = author.Task(title='sg nonretime version')
+            cmd = ['rez-env', 'shotgunapi', '--', 'python', self.sg_nonretime_script]
+            command = author.Command(argv=cmd)
+            self.sg_nonretime_task.addCommand(command)
+            cmd = ['rm', '-f', self.sg_nonretime_script]
+            command = author.Command(argv=cmd)
+            self.sg_nonretime_task.addCommand(command)
+            nonretime_montage = self.montage_path.replace('v%03d'%self.version, 'v%03d'%(self.version+1))
+            cmd = ['rm', '-f', nonretime_montage]
+            command = author.Command(argv=cmd)
+            self.sg_nonretime_task.addCommand(command)
+            nonretime_webm_path = self.webm_path.replace('v%03d'%self.version, 'v%03d'%(self.version+1))
+            cmd = ['rm', '-f', nonretime_webm_path]
+            command = author.Command(argv=cmd)
+            self.sg_nonretime_task.addCommand(command)
+            self.sg_nonretime_task.addChild(self.nonretime_mp4_task)
+            self.job.addChild(self.sg_nonretime_task)
+            return None
         self.rm_task.addChild(self.sg_task)
+        return None
 
     def create_rm_job(self):
         if self._opt_non_retime == True and os.path.exists(self.plate_path):
             return None
-        montage_path = os.path.join(self._app.sgtk.project_path, 'seq',
-                                    self.seq_name,
-                                    self.shot_name, "plate",
-                                    self.plate_file_name + "stream.jpeg")
-
-        webm_path = os.path.join(self._app.sgtk.project_path, 'seq',
-                                 self.seq_name,
-                                 self.shot_name, "plate",
-                                 self.plate_file_name + ".webm")
 
         self.rm_task = author.Task(title="rm")
         cmd = ['rm', '-f', self.nuke_script]
@@ -721,7 +793,7 @@ class Publish:
         command = author.Command(argv=cmd)
         self.rm_task.addCommand(command)
 
-        cmd = ['rm', '-f', montage_path]
+        cmd = ['rm', '-f', self.montage_path]
         command = author.Command(argv=cmd)
         self.rm_task.addCommand(command)
 
@@ -729,7 +801,7 @@ class Publish:
         command = author.Command(argv=cmd)
         self.rm_task.addCommand(command)
 
-        cmd = ['rm', '-f', webm_path]
+        cmd = ['rm', '-f', self.webm_path]
         command = author.Command(argv=cmd)
         self.rm_task.addCommand(command)
 
@@ -751,14 +823,13 @@ class Publish:
         output_path = os.path.join(temp_jpg_path, file_name + ".%04d.jpg")
         in_color = self.scan_colorspace
         out_color = colorspace_set[in_color]
-        tmp_org_jpg_file = os.path.join(self._app.sgtk.project_path, 'seq',
-                                        self.seq_name,
-                                        self.shot_name, "plate",
+        tmp_org_jpg_file = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
                                         self.plate_file_name + "_nonretime_jpg.py")
-
+        mov_path = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
+                                self.shot_name + "_" + self.seq_type + "_v%03d.mov" % (self.version+1))
         nk = ''
         nk += self.create_dpx_to_output_script(1001, 1000 + len(self.copy_file_list), read_path, output_path,
-                                               in_color, out_color, width, '')
+                                               in_color, out_color, width, mov_path)
         if not os.path.exists(os.path.dirname(tmp_org_jpg_file)):
             cur_umask = os.umask(0)
             os.makedirs(os.path.dirname(tmp_org_jpg_file), 0777)
@@ -978,24 +1049,23 @@ class Publish:
         nk += 'write["_jpeg_quality"].setValue(1.0)\n'
         nk += 'write["_jpeg_sub_sampling"].setValue("4:4:4")\n'
         nk += 'nuke.execute(write, {}, {}, 1)\n'.format(start_frame, end_frame)
-        if self._opt_non_retime == False:
-            if int(width) > 2048:
-                nk += 'reformat = reformat = nuke.nodes.Reformat(inputs=[%s],type=2,scale=.5)\n' % tg
-                reformat = 'reformat'
-            nk += 'output = "{}"\n'.format(mov_path)
-            if int(width) > 2048:
-                nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n' % reformat
-            else:
-                nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n' % tg
-            nk += 'write["file_type"].setValue( "mov" )\n'
-            nk += 'write["create_directories"].setValue(True)\n'
-            nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
-            nk += 'write["colorspace"].setValue("{}")\n'.format(output_color)
-            nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
-            # nk += 'write["colorspace"].setValue( "Cineon" )\n'
-            # nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
-            nk += 'nuke.execute(write,{},{},1)\n'.format(start_frame, end_frame)
-            nk += 'exit()\n'
+        if int(width) > 2048:
+            nk += 'reformat = reformat = nuke.nodes.Reformat(inputs=[%s],type=2,scale=.5)\n' % tg
+            reformat = 'reformat'
+        nk += 'output = "{}"\n'.format(mov_path)
+        if int(width) > 2048:
+            nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n' % reformat
+        else:
+            nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n' % tg
+        nk += 'write["file_type"].setValue( "mov" )\n'
+        nk += 'write["create_directories"].setValue(True)\n'
+        nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
+        nk += 'write["colorspace"].setValue("{}")\n'.format(output_color)
+        nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
+        # nk += 'write["colorspace"].setValue( "Cineon" )\n'
+        # nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
+        nk += 'nuke.execute(write,{},{},1)\n'.format(start_frame, end_frame)
+        nk += 'exit()\n'
         return nk
 
     def create_nuke_script(self):
@@ -1212,39 +1282,32 @@ class Publish:
         print tmp_nuke_script_file
         return tmp_nuke_script_file
 
-    def create_sg_script(self):
-        if self._opt_non_retime == True and os.path.exists(self.plate_path):
+    def create_sg_script(self, switch=False):
+        if self._opt_non_retime == True and switch == False and os.path.exists(self.plate_path):
             return None
-        tmp_sg_script_file = os.path.join(self._app.sgtk.project_path, 'seq',
-                                          self.seq_name,
-                                          self.shot_name, "plate",
+        tmp_sg_script_file = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
                                           self.plate_file_name + "_sg.py")
+        if switch == True and self._opt_non_retime == True:
+            tmp_sg_script_file = os.path.dirname(tmp_sg_script_file) + '/' + self.plate_file_name+'_sg_nonretime.py'
 
-        mov_path = os.path.join(self._app.sgtk.project_path, 'seq',
-                                self.seq_name,
-                                self.shot_name, "plate",
-                                self.plate_file_name + ".mov")
-
-        mp4_path = os.path.join(self._app.sgtk.project_path, 'seq',
-                                self.seq_name,
-                                self.shot_name, "plate",
-                                self.plate_file_name + ".mp4")
-
-        webm_path = os.path.join(self._app.sgtk.project_path, 'seq',
-                                 self.seq_name,
-                                 self.shot_name, "plate",
-                                 self.plate_file_name + ".webm")
-        # shotgun
-
+        mov_path01 = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
+                                  self.plate_file_name + ".mov")
+        mp4_path01 = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
+                                  self.plate_file_name + ".mp4")
         jpg_path = os.path.join(self.montage_jpg_path, self.plate_file_name + ".0001.jpg")
 
-        montage_path = os.path.join(self._app.sgtk.project_path, 'seq',
-                                    self.seq_name,
-                                    self.shot_name, "plate",
-                                    self.plate_file_name + "stream.jpeg")
-
+        version = self.version
+        if self._opt_non_retime == True:
+            version += 1
+            mov_path02 = mov_path01.replace('v%03d'%self.version, 'v%03d'%version)
+            mp4_path02 = mp4_path01.replace('v%03d'%self.version, 'v%03d'%version)
+            webm_path02 = self.webm_path.replace('v%03d'%self.version, 'v%03d'%version)
+            jpg_path02 = jpg_path.replace('v%03d'%self.version, 'v%03d'%version)
+            montage_path02 = self.montage_path.replace('v%03d'%self.version, 'v%03d'%(self.version+1))
         # ** real plate duration
         #update_desc = {'sg_just_cut': len(self.copy_file_list)}
+
+        plate_path = os.path.join(self.plate_path, self.plate_file_name+'.1001.'+self.master_input.ext)
 
         nk = ''
         nk += 'import shotgun_api3\n'
@@ -1254,15 +1317,26 @@ class Publish:
         nk += 'script_key = "yctqnqdjd0bttz)ornewKuitt"\n'
         nk += 'sg = shotgun_api3.Shotgun(WW_SG_HOST,script_name = script_name,api_key=script_key)\n'
         # nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie" )\n'%(self.version_ent['id'],mov_path)
-        nk += 'sg.upload_thumbnail( "PublishedFile", %s, "%s")\n' % (self.published_ent['id'], jpg_path)
-        nk += 'sg.upload_thumbnail( "Version", %s, "%s")\n' % (self.version_ent['id'], jpg_path)
-        nk += 'sg.upload_filmstrip_thumbnail( "Version", %s, "%s")\n' % (self.version_ent['id'], montage_path)
-        # ** command for real plate duration
-        #nk += 'sg.update( "Shot", {}, {})\n'.format(self.shot_ent['id'], update_desc)
-        nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_mp4" )\n' % (self.version_ent['id'], mp4_path)
-        nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_webm" )\n' % (self.version_ent['id'], webm_path)
+        if switch == False:
+            nk += 'sg.upload_thumbnail( "PublishedFile", %s, "%s")\n' % (self.published_ent['id'], jpg_path)
+            nk += 'sg.upload_thumbnail( "Version", %s, "%s")\n' % (self.version_ent['id'], jpg_path)
+            nk += 'sg.upload_filmstrip_thumbnail( "Version", %s, "%s")\n' % (self.version_ent['id'], self.montage_path)
+            # ** command for real plate duration
+            #nk += 'sg.update( "Shot", {}, {})\n'.format(self.shot_ent['id'], update_desc)
+            nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_mp4" )\n' % (self.version_ent['id'], mp4_path01)
+            nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_webm" )\n' % (self.version_ent['id'], self.webm_path)
+        else:
+            if hasattr(self, 'published_tmp_ent') is False or hasattr(self, 'version_tmp_ent') is False:
+                print "#### debug start ####"
+            else:
+                nk += 'sg.upload_thumbnail( "PublishedFile", %s, "%s")\n' % (self.published_tmp_ent['id'], jpg_path02)
+                nk += 'sg.upload_thumbnail( "Version", %s, "%s")\n' % (self.version_tmp_ent['id'], jpg_path02)
+                nk += 'sg.upload_filmstrip_thumbnail( "Version", %s, "%s")\n' % (self.version_tmp_ent['id'], montage_path02)
+                nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_mp4" )\n' % (self.version_tmp_ent['id'], mp4_path02)
+                nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_webm" )\n' % (self.version_tmp_ent['id'], webm_path02)
         # nk += 'time.sleep(20)\n'
 
+        print "#### succeeded sg file save ####"
         with open(tmp_sg_script_file, 'w') as f:
             f.write(nk)
         print tmp_sg_script_file
@@ -1271,6 +1345,18 @@ class Publish:
     @property
     def plate_file_name(self):
         temp = self.shot_name + "_" + self.seq_type + "_v%03d" % self.version
+        return temp
+
+    @property
+    def webm_path(self):
+        temp = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
+                            self.plate_file_name + ".webm")
+        return temp
+
+    @property
+    def montage_path(self):
+        temp = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
+                            self.plate_file_name + "stream.jpeg")
         return temp
 
     @property
@@ -1393,9 +1479,6 @@ class Publish:
         pass
 
     def publish_to_shotgun(self):
-        if self._opt_non_retime == True and os.path.exists(self.plate_path):
-            return None
-
         context = sgtk.Context(self._app.tank, project=self.project,
                                entity=self.shot_ent,
                                step=None,
