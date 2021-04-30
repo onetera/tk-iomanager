@@ -521,7 +521,7 @@ class Publish:
             version_type = "src"
 
         plate_seq_path = self.plate_path.replace('v%03d'%self.version, 'v%03d'%version)
-        plate_name = self.shot_name + "_" + self.seq_type + "_v%03d.mov" % version
+        plate_name = self.shot_name + "_" + self.seq_type + "_v%03d" % version
         mov_path = os.path.join(self._app.sgtk.project_path, 'seq',
                                 self.seq_name,
                                 self.shot_name, "plate",
@@ -544,7 +544,7 @@ class Publish:
             read_path = os.path.join(self.plate_path, self.plate_file_name + ".%04d.dpx")
         desc = {
             "project": self.project,
-            "code": plate_name,
+            "code": plate_name+".mov",
             "sg_status_list": "fin",
             'entity': self.shot_ent,
             "sg_path_to_movie": mov_path,
