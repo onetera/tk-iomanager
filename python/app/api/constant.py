@@ -30,6 +30,7 @@ MODEL_KEYS["just_in"] = 21
 MODEL_KEYS["just_out"] = 22
 MODEL_KEYS["framerate"] = 23
 MODEL_KEYS["date"] = 24
+MODEL_KEYS["clip_tag"] = 25
 
 
 COLORSPACE=[
