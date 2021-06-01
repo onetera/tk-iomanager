@@ -227,6 +227,7 @@ def _create_seq_array(sequences):
         info.insert(MODEL_KEYS['just_out'], _get_end(seq))
         info.insert(MODEL_KEYS['framerate'] ,_get_framerate(seq))
         info.insert(MODEL_KEYS['date'] , "")
+        info.insert(MODEL_KEYS['clip_tag'], "")
         array.append(info)
     
     return array

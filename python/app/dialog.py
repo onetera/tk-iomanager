@@ -208,7 +208,6 @@ class AppDialog(QtGui.QWidget):
         colorspace = str(self.ui.colorspace_combo.currentText())
         group_model = OrderedDict()
         for row in range(0, model.rowCount(None)):
-
             index = model.createIndex(row, 0)
             check = model.data(index, QtCore.Qt.CheckStateRole)
             if check == QtCore.Qt.CheckState.Checked:
@@ -220,6 +219,8 @@ class AppDialog(QtGui.QWidget):
                 scan_name = model.data(scan_name_index, QtCore.Qt.DisplayRole)
                 shot_name_index = model.createIndex(row, MODEL_KEYS['shot_name'])
                 shot_name = model.data(shot_name_index, QtCore.Qt.DisplayRole)
+                tag_name_index = model.createIndex(row, MODEL_KEYS['clip_tag'])
+                tag_name = model.data(tag_name_index, QtCore.Qt.DisplayRole)
                 dict_name = shot_name + "_" + scan_name + "_" + scan_type + "_" + scan_version
                 if shot_name:
                     if group_model.has_key(dict_name):
@@ -227,7 +228,6 @@ class AppDialog(QtGui.QWidget):
                     else:
                         group_model[dict_name] = []
                         group_model[dict_name].append(row)
-
 
                 # seq_source
                 else:
@@ -240,7 +240,8 @@ class AppDialog(QtGui.QWidget):
 
             opt_dpx = self.ui.mov_dpx_check.isChecked()
             opt_non_retime = self.ui.non_retime_check.isChecked()
-            publish.Publish(master_input, colorspace, opt_dpx, opt_non_retime)
+            opt_clip = self.ui.clip_check.isChecked()
+            publish.Publish(master_input, colorspace, opt_dpx, opt_non_retime, opt_clip)
 
     def _collect(self):
 
@@ -290,25 +291,3 @@ class AppDialog(QtGui.QWidget):
             print key
             print group_model[key]
             collect.Collect(model, key, group_model[key], colorspace, str(collect_path))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
