@@ -182,8 +182,8 @@ class Publish:
         self._context = self._app.context
 
         output_info = self._sg.find_one("Project", [['id', 'is', self.project['id']]],
-                                       ['sg_colorspace', 'sg_mov_codec',
-                                        'sg_out_format', 'sg_fps', 'sg_mov_colorspace'])
+                                        ['sg_colorspace', 'sg_mov_codec',
+                                         'sg_out_format', 'sg_fps', 'sg_mov_colorspace'])
 
         self.setting = Output(output_info)
         self._sg_cmd = ShotgunCommands(self._app, self._sg, self.project, self.clip_project, self.user, self._context)
@@ -217,12 +217,13 @@ class Publish:
         # self.copy_script = self._create_copy_script()
 
         self.create_job()
-        self.create_rm_job(switch=True)
         self.create_temp_job()
-        self.convert_gif_job()
-        # self.convert_mp4_job(switch=True)
-        self.create_jpg_job(switch=True)
-        self.create_clip_lib_job()
+        if self.seq_type == 'lib':
+            self.create_rm_job(switch=True)
+            self.convert_gif_job()
+            # self.convert_mp4_job(switch=True)
+            self.create_jpg_job(switch=True)
+            self.create_clip_lib_job()
         if self._opt_clip == False:
             self.create_rm_job()
         self.create_sg_job()
@@ -656,7 +657,7 @@ class Publish:
         if self.master_input.ext == "mov" and self._opt_dpx == False:
             cmd = ["echo", "'pass'"]
 
-        if self.seq_type != 'lib' or switch == False:
+        if switch == False:
             command = author.Command(argv=cmd)
             self.jpg_task.addCommand(command)
             self.mp4_task.addChild(self.jpg_task)
@@ -688,33 +689,21 @@ class Publish:
     def convert_mp4_job(self, switch=False):
         if switch == True and self._opt_non_retime == True:
             self.nonretime_mp4_task = author.Task(title='render nonretimed mp4')
-        elif switch == True and self.seq_type == "lib":
-            self.cliplib_mp4_task = author.Task(title='convert mov for clip lib')
         elif switch == True and self._opt_non_retime == False:
-            return None
-        elif switch == False and self._opt_clip == True:
             return None
         else:
             self.mp4_task = author.Task(title="render mp4")
         version = self.version
-        if switch == True and self._opt_non_retime == True:
+        if switch == True:
             version += 1
 
-        if switch == False:
-            file_name = self.plate_file_name.replace('v%03d'%self.version, 'v%03d'%version)
-            mov_path = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
-                                    file_name + ".mov")
-            mp4_path = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
-                                    file_name + ".mp4")
-            webm_path = self.webm_path.replace(self.plate_file_name+'.webm', file_name+'.webm')
-            montage_path = self.montage_path.replace(self.plate_file_name + "stream.jpeg", file_name+"stream.jpeg")
-        else:
-            file_name = self.clip_lib_name
-            dir_path = os.path.dirname(self.clip_lib_mov_path)
-            mov_path = os.path.join(self.clip_lib_mov_path, file_name + ".mov")
-            mp4_path = os.path.join(self.clip_lib_mov_path, file_name + ".mp4")
-            webm_path = os.path.join(dir_path, file_name + ".webm")
-            montage_path = os.path.join(dir_path, file_name+"stream.jpeg")
+        file_name = self.plate_file_name.replace('v%03d'%self.version, 'v%03d'%version)
+        mov_path = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
+                                file_name + ".mov")
+        mp4_path = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
+                                file_name + ".mp4")
+        webm_path = self.webm_path.replace(self.plate_file_name+'.webm', file_name+'.webm')
+        montage_path = self.montage_path.replace(self.plate_file_name + "stream.jpeg", file_name+"stream.jpeg")
 
         command = ['rez-env', 'ffmpeg', '--', 'ffmpeg', '-y']
         command.append("-i")
@@ -735,8 +724,6 @@ class Publish:
         command = author.Command(argv=command)
         if switch == True and self._opt_non_retime == True:
             self.nonretime_mp4_task.addCommand(command)
-        elif switch == True and self.seq_type == "lib":
-            self.cliplib_mp4_task.addCommand(command)
         else:
             self.mp4_task.addCommand(command)
 
@@ -765,8 +752,6 @@ class Publish:
         command = author.Command(argv=command)
         if switch == True and self._opt_non_retime == True:
             self.nonretime_mp4_task.addCommand(command)
-        elif switch == True and self.seq_type == "lib":
-            self.cliplib_mp4_task.addCommand(command)
         else:
             self.mp4_task.addCommand(command)
 
@@ -802,8 +787,6 @@ class Publish:
         command = author.Command(argv=command)
         if switch == True and self._opt_non_retime == True:
             self.nonretime_mp4_task.addCommand(command)
-        elif switch == True and self.seq_type == "lib":
-            self.cliplib_mp4_task.addCommand(command)
         else:
             self.mp4_task.addCommand(command)
 
@@ -824,15 +807,11 @@ class Publish:
         command = author.Command(argv=command)
         if switch == True and self._opt_non_retime == True:
             self.nonretime_mp4_task.addCommand(command)
-        elif switch == True and self.seq_type == "lib":
-            self.cliplib_mp4_task.addCommand(command)
         else:
             self.mp4_task.addCommand(command)
 
         if self._opt_non_retime == True and switch == True:
             self.nonretime_mp4_task.addChild(self.tmp_rm_jpg_task)
-        elif switch == True and self.seq_type == "lib":
-            self.job.addChild(self.cliplib_mp4_task)
         else:
             self.sg_task.addChild(self.mp4_task)
 
@@ -906,13 +885,15 @@ class Publish:
         # command = author.Command(argv=cmd)
         # self.rm_task.addCommand(command)
 
-        if self.seq_type != 'lib':
+        if switch == False and self.seq_type != 'lib':
             self.job.addChild(self.rm_task)
-        else:
+            return None
+        if self.seq_type == 'lib':
             if switch == True:
                 self.job.addChild(self.rm_task)
             else:
                 self.copy_clip_lib_task.addChild(self.rm_task)
+            return None
 
     def submit_job(self):
 
