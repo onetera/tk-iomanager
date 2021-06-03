@@ -691,6 +691,8 @@ class Publish:
             self.nonretime_mp4_task = author.Task(title='render nonretimed mp4')
         elif switch == True and self._opt_non_retime == False:
             return None
+        elif self._opt_clip == True:
+            return None
         else:
             self.mp4_task = author.Task(title="render mp4")
         version = self.version
