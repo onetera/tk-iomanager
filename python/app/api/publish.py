@@ -210,6 +210,7 @@ class Publish:
 
         self.nuke_retime_script = self.create_nuke_retime_script()
         self.nuke_script = self.create_nuke_script()
+        self.nuke_clip_script = self.create_nuke_script(switch=True)
         self.nuke_mov_script = self.create_mov_nuke_script()
         self.sg_script = self.create_sg_script()
         if self._opt_non_retime == True:
@@ -341,7 +342,8 @@ class Publish:
             self.org_task.addCommand(command)
             self.jpg_task.addChild(self.org_task)
         else:
-            self.create_copy_job()
+            if self._opt_clip == False:
+                self.create_copy_job()
 
     def create_clip_lib_job(self):
         if self.seq_type == "lib":
@@ -352,16 +354,9 @@ class Publish:
                 os.makedirs(self.clip_lib_seq_path, 0777)
                 os.umask(cur_umask)
 
-            clip_mov_name = self.clip_lib_name + '.mov'
-            command = ['/bin/cp', '-fv']
-            if self._opt_clip == False:
-                plate_mov_path = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name,
-                                              self.shot_name, "plate")
-                command.append(os.path.join(plate_mov_path, self.plate_file_name+'.mov'))
-                command.append(os.path.join(self.clip_lib_mov_path, clip_mov_name))
-                cmd = author.Command(argv=command)
-                self.copy_clip_lib_task.addCommand(cmd)
-            if self._opt_clip == True and self.master_input.ext == 'mov':
+            if self.master_input.ext == 'mov':
+                clip_mov_name = self.clip_lib_name + '.mov'
+                command = ['/bin/cp', '-fv']
                 target_path = self.master_input.scan_path
                 target_name = self.master_input.scan_name
                 command.append(os.path.join(target_path, target_name))
@@ -369,18 +364,8 @@ class Publish:
                 cmd = author.Command(argv=command)
                 self.copy_clip_lib_task.addCommand(cmd)
 
-            if self.master_input.ext == 'mov':
-                file_type = 'dpx'
-            else:
-                file_type = self.master_input.ext
-
             command = ['/bin/cp', '-R']
-            if self._opt_clip == False:
-                command.append(os.path.join(self.plate_path))
-                command.append(os.path.join(self.clip_lib_seq_path))
-                cmd = author.Command(argv=command)
-                self.copy_clip_lib_task.addCommand(cmd)
-            if self._opt_clip == True and self.master_input.ext in ['dpx', 'exr']:
+            if self.master_input.ext in ['dpx', 'exr']:
                 target_path = self.master_input.scan_path
                 command.append(os.path.join(target_path))
                 command.append(os.path.join(self.clip_lib_seq_path))
@@ -388,11 +373,7 @@ class Publish:
                 self.copy_clip_lib_task.addCommand(cmd)
 
             # self.cliplib_mp4_task.addChild(self.copy_clip_lib_task)
-            if self._opt_clip == True:
-                self.jpg_task.addChild(self.copy_clip_lib_task)
-            else:
-                self.cliplib_gif_task.addChild(self.copy_clip_lib_task)
-
+            self.jpg_task.addChild(self.copy_clip_lib_task)
 
     def publish_temp_jpg(self):
         if self._opt_non_retime == False or self._opt_clip == True:
@@ -635,23 +616,28 @@ class Publish:
         if self._opt_non_retime == True and os.path.exists(self.plate_path):
             return None
 
+        if switch == False:
+            nuke_script = self.nuke_script
+        else:
+            nuke_script = self.nuke_clip_script
+
         self.jpg_task = author.Task(title="render jpg")
-        cmd = ['rez-env', 'nuke-11', '--', 'nuke', '-ix', self.nuke_script]
+        cmd = ['rez-env', 'nuke-11', '--', 'nuke', '-ix', nuke_script]
         if self._opt_dpx == True:
-            cmd = ['rez-env', 'natron', '--', 'NatronRenderer', '-t', self.nuke_script]
+            cmd = ['rez-env', 'natron', '--', 'NatronRenderer', '-t', nuke_script]
             if not self.scan_colorspace.find("ACES") == -1:
-                cmd = ['rez-env', 'natron', 'ocio_config', '--', 'NatronRenderer', '-t', self.nuke_script]
+                cmd = ['rez-env', 'natron', 'ocio_config', '--', 'NatronRenderer', '-t', nuke_script]
             if not self.scan_colorspace.find("Alexa") == -1:
-                cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_script]
+                cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', nuke_script]
             if not self.scan_colorspace.find("legacy") == -1:
-                cmd = ['rez-env', 'natron', 'legacy_config', '--', 'NatronRenderer', '-t', self.nuke_script]
+                cmd = ['rez-env', 'natron', 'legacy_config', '--', 'NatronRenderer', '-t', nuke_script]
         else:
             if not self.scan_colorspace.find("ACES") == -1:
-                cmd = ['rez-env', 'nuke-11', 'ocio_config', '--', 'nuke', '-ix', self.nuke_script]
+                cmd = ['rez-env', 'nuke-11', 'ocio_config', '--', 'nuke', '-ix', nuke_script]
             if not self.scan_colorspace.find("Alexa") == -1:
-                cmd = ['rez-env', 'nuke-11', 'alexa_config', '--', 'nuke', '-ix', self.nuke_script]
+                cmd = ['rez-env', 'nuke-11', 'alexa_config', '--', 'nuke', '-ix', nuke_script]
             if not self.scan_colorspace.find("legacy") == -1:
-                cmd = ['rez-env', 'nuke-11', 'legacy_config', '--', 'nuke', '-ix', self.nuke_script]
+                cmd = ['rez-env', 'nuke-11', 'legacy_config', '--', 'nuke', '-ix', nuke_script]
         if self.master_input.ext == "mov" and self._opt_dpx == False:
             cmd = ["echo", "'pass'"]
 
@@ -659,7 +645,7 @@ class Publish:
             command = author.Command(argv=cmd)
             self.jpg_task.addCommand(command)
             self.mp4_task.addChild(self.jpg_task)
-        if switch == True and self._opt_clip == True:
+        else:
             command = author.Command(argv=cmd)
             self.jpg_task.addCommand(command)
             self.cliplib_gif_task.addChild(self.jpg_task)
@@ -849,8 +835,13 @@ class Publish:
         if self._opt_non_retime == True and os.path.exists(self.plate_path):
             return None
 
+        if switch == False:
+            nuke_script = self.nuke_script
+        else:
+            nuke_script = self.nuke_clip_script
+
         self.rm_task = author.Task(title="rm")
-        cmd = ['rm', '-f', self.nuke_script]
+        cmd = ['rm', '-f', nuke_script]
         command = author.Command(argv=cmd)
         self.rm_task.addCommand(command)
 
@@ -1152,9 +1143,12 @@ class Publish:
         nk += 'exit()\n'
         return nk
 
-    def create_nuke_script(self):
+    def create_nuke_script(self, switch=False):
         if self._opt_non_retime == True and os.path.exists(self.plate_path):
             return None
+        if self.seq_type != 'lib' and switch == True:
+            return None
+
         width, height = self.master_input.resolution.split("x")
 
         if self.master_input.retime_job:
@@ -1166,7 +1160,7 @@ class Publish:
 
         jpg_path = os.path.join(self.plate_jpg_path, self.plate_file_name + ".%04d.jpg")
         jpg_2k_path = os.path.join(self.plate_jpg_2k_path, self.plate_file_name + ".%04d.jpg")
-        if self._opt_clip == False:
+        if switch == False:
             tmp_nuke_script_file = os.path.join(self._app.sgtk.project_path, 'seq',
                                                 self.seq_name,
                                                 self.shot_name, "plate",
@@ -1181,13 +1175,13 @@ class Publish:
             mov_path = os.path.join(self.clip_lib_mov_path, self.clip_lib_name+'.mov')
 
         if self._opt_dpx == False:
-            if self.seq_type != 'lib':
+            start_frame = int(self.master_input.just_in)
+            end_frame = int(self.master_input.just_out)
+            if switch == False:
                 start_frame = 1001
                 end_frame = 1000 + int(frame_count)
                 read_path = os.path.join(self.plate_path, self.plate_file_name + ".%04d." + self.file_ext)
             else:
-                start_frame = int(self.master_input.just_in)
-                end_frame = int(self.master_input.just_out)
                 if self.master_input.ext != 'mov':
                     filename = '.'.join([self.master_input.scan_name[:-1], self.master_input.pad, self.master_input.ext])
                 else:
@@ -1232,7 +1226,7 @@ class Publish:
                 nk += 'write["_jpeg_sub_sampling"].setValue( "4:4:4" )\n'
                 nk += 'nuke.execute(write,{},{},1)\n'.format(start_frame, end_frame)
 
-            if self._opt_clip == False:
+            if switch == False or self.seq_type != 'lib':
                 nk += 'output = "{}"\n'.format(jpg_path)
                 nk += 'write   = nuke.nodes.Write(name="ww_write", inputs = [%s],file=output )\n' % tg
                 nk += 'write["file_type"].setValue( "jpeg" )\n'
@@ -1258,20 +1252,25 @@ class Publish:
             nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
             # nk += 'write["colorspace"].setValue( "Cineon" )\n'
             # nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
-            nk += 'nuke.execute(write,1001,{},1)\n'.format(int(1000 + frame_count))
+            nk += 'nuke.execute(write,1,{},1)\n'.format(int(frame_count))
             nk += 'exit()\n'
 
         else:
-            tmp_dpx_to_jpg_file = os.path.join(self._app.sgtk.project_path, 'seq',
-                                               self.seq_name,
-                                               self.shot_name, "plate",
-                                               self.plate_file_name + "_jpg.py")
-            # start_frame = 1
-            # end_frame = int(self.master_input.just_out) - int(self.master_input.just_in) + 1
             start_frame = int(self.master_input.just_in)
             end_frame = int(self.master_input.just_out)
-            dpx_path = os.path.join(self.plate_path, self.plate_file_name + ".%04d.dpx")
-            read_path = os.path.join(self.master_input.scan_path,self.master_input.scan_name)
+            if self.seq_type != 'lib':
+                tmp_dpx_to_jpg_file = os.path.join(self._app.sgtk.project_path, 'seq',
+                                                   self.seq_name,
+                                                   self.shot_name, "plate",
+                                                   self.plate_file_name + "_jpg.py")
+                # start_frame = 1
+                # end_frame = int(self.master_input.just_out) - int(self.master_input.just_in) + 1
+                dpx_path = os.path.join(self.plate_path, self.plate_file_name + ".%04d.dpx")
+                read_path = os.path.join(self.master_input.scan_path,self.master_input.scan_name)
+            else:
+                clip_name = '.'.join([self.clip_lib_name, self.master_input.pad, "dpx"])
+                dpx_path = os.path.join(self.clip_lib_seq_path, clip_name)
+                read_path = os.path.join(self.master_input.scan_path, self.master_input.scan_name)
 
             self.use_natron = True
             img_nk = ''
@@ -1295,79 +1294,87 @@ class Publish:
             #     nk += self.add_mov_to_dpx_script(dpx_path, tg, start_frame, end_frame)
             #     img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_2k_path, color,
             #                                                colorspace_set[color], width, mov_path)
-            img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_path, color,
-                                                       colorspace_set[color], width, mov_path)
+            if self.seq_type != 'lib':
+                img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_path, color,
+                                                           colorspace_set[color], width, mov_path)
             nk += self.add_mov_to_dpx_script(dpx_path, tg, start_frame, end_frame)
 
-            color_config = 'alexa_config'
-            if not self.scan_colorspace.find("ACES") == -1:
-                color_config = 'ocio_config'
-            if not self.scan_colorspace.find("Alexa") == -1:
+            if self.seq_type != 'lib':
                 color_config = 'alexa_config'
-            if not self.scan_colorspace.find("legacy") == -1:
-                color_config = 'legacy_config'
+                if not self.scan_colorspace.find("ACES") == -1:
+                    color_config = 'ocio_config'
+                if not self.scan_colorspace.find("Alexa") == -1:
+                    color_config = 'alexa_config'
+                if not self.scan_colorspace.find("legacy") == -1:
+                    color_config = 'legacy_config'
 
-            nk += 'os.system("rez-env nuke-11 {} -- nuke -ix {}")\n'.format(color_config, tmp_dpx_to_jpg_file)
-            # if int(width) > 2048:
-            #     nk += 'jpg_2k_dir = os.path.dirname("{}")\n'.format(jpg_2k_path)
-            #     nk += 'jpg_2k_list = sorted(os.listdir(jpg_2k_dir))\n'
-            #     nk += 'cnt = 1001\n'
-            #     nk += 'for target in jpg_2k_list: \n'
-            #     nk += '    os.rename(jpg_2k_dir+"/"+target, jpg_2k_dir+"/{}.%d.jpg"%cnt)\n'.format(self.plate_file_name)
-            #     nk += '    cnt += 1\n'
-            #     jpg_path = jpg_2k_path
-            nk += 'os.remove("{}")\n'.format(tmp_dpx_to_jpg_file)
-            nk += 'dpx_output_dir = os.path.dirname("{}")\n'.format(dpx_path)
-            nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
-            nk += 'jpg_output_dir = os.path.dirname("{}")\n'.format(jpg_path)
-            nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
-            if len(str(end_frame)) > 4:
-                nk += 'dpx_tmp_list, jpg_tmp_list = [], []\n'
+                nk += 'os.system("rez-env nuke-11 {} -- nuke -ix {}")\n'.format(color_config, tmp_dpx_to_jpg_file)
+                # if int(width) > 2048:
+                #     nk += 'jpg_2k_dir = os.path.dirname("{}")\n'.format(jpg_2k_path)
+                #     nk += 'jpg_2k_list = sorted(os.listdir(jpg_2k_dir))\n'
+                #     nk += 'cnt = 1001\n'
+                #     nk += 'for target in jpg_2k_list: \n'
+                #     nk += '    os.rename(jpg_2k_dir+"/"+target, jpg_2k_dir+"/{}.%d.jpg"%cnt)\n'.format(self.plate_file_name)
+                #     nk += '    cnt += 1\n'
+                #     jpg_path = jpg_2k_path
+                nk += 'os.remove("{}")\n'.format(tmp_dpx_to_jpg_file)
+                nk += 'dpx_output_dir = os.path.dirname("{}")\n'.format(dpx_path)
+                nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
+                if self.seq_type != 'lib':
+                    nk += 'jpg_output_dir = os.path.dirname("{}")\n'.format(jpg_path)
+                    nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
+                if len(str(end_frame)) > 4:
+                    nk += 'dpx_tmp_list, jpg_tmp_list = [], []\n'
+                    nk += 'for target in dpx_output_list:\n'
+                    nk += '    name = target.split(".")\n'
+                    nk += '    if len(name[1]) != {}:\n'.format(len(str(end_frame)))
+                    nk += '        res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(end_frame)))
+                    nk += '        os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/"+res)\n'
+                    nk += '        dpx_tmp_list.append(res)\n'
+                    nk += '    else:\n'
+                    nk += '        dpx_tmp_list.append(target)\n'
+                if self.seq_type != 'lib':
+                    nk += 'for target in jpg_output_list:\n'
+                    nk += '    name = target.split(".")\n'
+                    nk += '    if len(name[1]) != {}:\n'.format(len(str(end_frame)))
+                    nk += '        res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(end_frame)))
+                    nk += '        os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/"+res)\n'
+                    nk += '        jpg_tmp_list.append(res)\n'
+                    nk += '    else:\n'
+                    nk += '        jpg_tmp_list.append(target)\n'
+                    nk += 'dpx_output_list = sorted(dpx_tmp_list)\n'
+                    nk += 'jpg_output_list = sorted(jpg_tmp_list)\n'
+                nk += 'cnt1 = cnt2 = 1001\n'
                 nk += 'for target in dpx_output_list:\n'
-                nk += '    name = target.split(".")\n'
-                nk += '    if len(name[1]) != {}:\n'.format(len(str(end_frame)))
-                nk += '        res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(end_frame)))
-                nk += '        os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/"+res)\n'
-                nk += '        dpx_tmp_list.append(res)\n'
-                nk += '    else:\n'
-                nk += '        dpx_tmp_list.append(target)\n'
-                nk += 'for target in jpg_output_list:\n'
-                nk += '    name = target.split(".")\n'
-                nk += '    if len(name[1]) != {}:\n'.format(len(str(end_frame)))
-                nk += '        res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(end_frame)))
-                nk += '        os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/"+res)\n'
-                nk += '        jpg_tmp_list.append(res)\n'
-                nk += '    else:\n'
-                nk += '        jpg_tmp_list.append(target)\n'
-                nk += 'dpx_output_list = sorted(dpx_tmp_list)\n'
-                nk += 'jpg_output_list = sorted(jpg_tmp_list)\n'
-            nk += 'cnt1 = cnt2 = 1001\n'
-            nk += 'for target in dpx_output_list:\n'
-            nk += '    os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.org.dpx"%cnt1)\n'.format(self.plate_file_name)
-            nk += '    cnt1 += 1\n'
-            nk += 'for target in jpg_output_list:\n'
-            nk += '    os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.org.jpg"%cnt2)\n'.format(self.plate_file_name)
-            nk += '    cnt2 += 1\n'
-            nk += 'cnt1 = cnt2 = 1001\n'
-            nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
-            nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
-            nk += 'for target in dpx_output_list:\n'
-            nk += '    os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.dpx"%cnt1)\n'.format(self.plate_file_name)
-            nk += '    cnt1 += 1\n'
-            nk += 'for target in jpg_output_list:\n'
-            nk += '    os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.jpg"%cnt2)\n'.format(self.plate_file_name)
-            nk += '    cnt2 += 1\n'
-            nk += 'exit()\n'
+                nk += '    os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.org.dpx"%cnt1)\n'.format(self.plate_file_name)
+                nk += '    cnt1 += 1\n'
+                if self.seq_type != 'lib':
+                    nk += 'for target in jpg_output_list:\n'
+                    nk += '    os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.org.jpg"%cnt2)\n'.format(self.plate_file_name)
+                    nk += '    cnt2 += 1\n'
+                nk += 'cnt1 = cnt2 = 1001\n'
+                nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
+                if self.seq_type != 'lib':
+                    nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
+                nk += 'for target in dpx_output_list:\n'
+                nk += '    os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.dpx"%cnt1)\n'.format(self.plate_file_name)
+                nk += '    cnt1 += 1\n'
+                if self.seq_type != 'lib':
+                    nk += 'for target in jpg_output_list:\n'
+                    nk += '    os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.jpg"%cnt2)\n'.format(self.plate_file_name)
+                    nk += '    cnt2 += 1\n'
+                nk += 'exit()\n'
 
-            if not os.path.exists(os.path.dirname(tmp_dpx_to_jpg_file)):
-                cur_umask = os.umask(0)
-                os.makedirs(os.path.dirname(tmp_dpx_to_jpg_file), 0777)
-                os.umask(cur_umask)
+                if self.seq_type != 'lib':
+                    if not os.path.exists(os.path.dirname(tmp_dpx_to_jpg_file)):
+                        cur_umask = os.umask(0)
+                        os.makedirs(os.path.dirname(tmp_dpx_to_jpg_file), 0777)
+                        os.umask(cur_umask)
 
-            with open(tmp_dpx_to_jpg_file, 'w') as f:
-                f.write(img_nk)
+                    with open(tmp_dpx_to_jpg_file, 'w') as f:
+                        f.write(img_nk)
 
-            print tmp_dpx_to_jpg_file
+                    print tmp_dpx_to_jpg_file
 
         if not os.path.exists(os.path.dirname(tmp_nuke_script_file)):
             cur_umask = os.umask(0)
