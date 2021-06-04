@@ -310,8 +310,6 @@ class Publish:
     def create_org_job(self):
         if self._opt_non_retime == True and os.path.exists(self.plate_path):
             return None
-        if self.seq_type == 'lib' and self.master_input.ext != 'mov':
-            return None
 
         if self.master_input.retime_job:
             self.org_task = author.Task(title="create org")
@@ -1183,11 +1181,13 @@ class Publish:
             mov_path = os.path.join(self.clip_lib_mov_path, self.clip_lib_name+'.mov')
 
         if self._opt_dpx == False:
-            start_frame = 1001
-            end_frame = 1000 + int(frame_count)
             if self.seq_type != 'lib':
+                start_frame = 1001
+                end_frame = 1000 + int(frame_count)
                 read_path = os.path.join(self.plate_path, self.plate_file_name + ".%04d." + self.file_ext)
             else:
+                start_frame = int(self.master_input.just_in)
+                end_frame = int(self.master_input.just_out)
                 if self.master_input.ext != 'mov':
                     filename = '.'.join([self.master_input.scan_name[:-1], self.master_input.pad, self.master_input.ext])
                 else:
