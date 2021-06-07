@@ -1252,7 +1252,10 @@ class Publish:
             nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
             # nk += 'write["colorspace"].setValue( "Cineon" )\n'
             # nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
-            nk += 'nuke.execute(write,1,{},1)\n'.format(int(frame_count))
+            if self.seq_type == 'lib':
+                nk += 'nuke.execute(write,1,{},1)\n'.format(int(frame_count))
+            else:
+                nk += 'nuke.execute(write,{},{},1)\n'.format(start_frame, end_frame)
             nk += 'exit()\n'
 
         else:
