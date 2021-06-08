@@ -50,7 +50,7 @@ class ShotgunCommands(object):
     def create_shot(self, shot_name):
         print "create Shot"
         project = self._project
-        if 'clip' in shot_name:
+        if 'src' in shot_name:
             project = self._clip_project
 
         key = [
@@ -60,12 +60,12 @@ class ShotgunCommands(object):
               ]
 
         shot_ent = self._sg.find_one('Shot', key)
-        if 'clip' in shot_name:
+        if 'src' in shot_name:
             fields = ['code', 'tags']
             shot_ent = self._sg.find_one('Shot', key, fields)
 
         if shot_ent:
-            if 'clip' not in shot_name or 'tags' in shot_ent.keys():
+            if 'src' not in shot_name or 'tags' in shot_ent.keys():
                 self.shot_ent = shot_ent
                 return self.shot_ent
 
@@ -75,7 +75,7 @@ class ShotgunCommands(object):
                 'code': shot_name,
                 'tags': []
                }
-        if 'clip' in shot_name:
+        if 'src' in shot_name:
             desc['tags'] += self._clip_tag
         self.shot_ent = self._sg.create("Shot", desc)
         return self.shot_ent
