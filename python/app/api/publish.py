@@ -256,7 +256,7 @@ class Publish:
     def create_job(self):
         self.job = author.Job()
         self.job.title = str('[IOM]' + self.shot_name + " publish")
-        self.job.service = "Linux64"
+        self.job.service = "lib"
         self.job.priority = 10
 
     def create_seq(self, switch=False):
@@ -1287,7 +1287,7 @@ class Publish:
             else:
                 tmp_dpx_to_jpg_file = os.path.join(self.clip_lib_seq_path, self.clip_lib_name + '_jpg.py')
                 pad = len(str(end_frame))
-                clip_name = '.'.join([self.clip_lib_name, "%0{}d".format(str(pad)), "dpx"])
+                clip_name = '.'.join([self.clip_lib_name, "%04d", "dpx"])
                 dpx_path = os.path.join(self.clip_lib_seq_path, clip_name)
                 read_path = os.path.join(self.master_input.scan_path, self.master_input.scan_name)
 
@@ -1335,63 +1335,64 @@ class Publish:
             #     nk += '    cnt += 1\n'
             #     jpg_path = jpg_2k_path
             nk += 'os.remove("{}")\n'.format(tmp_dpx_to_jpg_file)
+            nk += 'dpx_output_dir = os.path.dirname("{}")\n'.format(dpx_path)
+            nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
             if self.seq_type != 'lib':
-                nk += 'dpx_output_dir = os.path.dirname("{}")\n'.format(dpx_path)
-                nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
+                nk += 'jpg_output_dir = os.path.dirname("{}")\n'.format(jpg_path)
+                nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
+            if len(str(end_frame)) > 4:
+                nk += 'dpx_tmp_list, jpg_tmp_list = [], []\n'
+                nk += 'for target in dpx_output_list:\n'
+                nk += '    name = target.split(".")\n'
+                nk += '    if len(name[1]) != {}:\n'.format(len(str(end_frame)))
+                nk += '        res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(end_frame)))
+                nk += '        os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/"+res)\n'
+                nk += '        dpx_tmp_list.append(res)\n'
+                nk += '    else:\n'
+                nk += '        dpx_tmp_list.append(target)\n'
                 if self.seq_type != 'lib':
-                    nk += 'jpg_output_dir = os.path.dirname("{}")\n'.format(jpg_path)
-                    nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
-                if len(str(end_frame)) > 4:
-                    nk += 'dpx_tmp_list, jpg_tmp_list = [], []\n'
-                    nk += 'for target in dpx_output_list:\n'
+                    nk += 'for target in jpg_output_list:\n'
                     nk += '    name = target.split(".")\n'
                     nk += '    if len(name[1]) != {}:\n'.format(len(str(end_frame)))
                     nk += '        res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(end_frame)))
-                    nk += '        os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/"+res)\n'
-                    nk += '        dpx_tmp_list.append(res)\n'
+                    nk += '        os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/"+res)\n'
+                    nk += '        jpg_tmp_list.append(res)\n'
                     nk += '    else:\n'
-                    nk += '        dpx_tmp_list.append(target)\n'
-                    if self.seq_type != 'lib':
-                        nk += 'for target in jpg_output_list:\n'
-                        nk += '    name = target.split(".")\n'
-                        nk += '    if len(name[1]) != {}:\n'.format(len(str(end_frame)))
-                        nk += '        res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(end_frame)))
-                        nk += '        os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/"+res)\n'
-                        nk += '        jpg_tmp_list.append(res)\n'
-                        nk += '    else:\n'
-                        nk += '        jpg_tmp_list.append(target)\n'
-                        nk += 'dpx_output_list = sorted(dpx_tmp_list)\n'
-                        nk += 'jpg_output_list = sorted(jpg_tmp_list)\n'
-                nk += 'cnt1 = cnt2 = 1001\n'
-                nk += 'for target in dpx_output_list:\n'
-                nk += '    os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.org.dpx"%cnt1)\n'.format(self.plate_file_name)
-                nk += '    cnt1 += 1\n'
-                if self.seq_type != 'lib':
-                    nk += 'for target in jpg_output_list:\n'
-                    nk += '    os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.org.jpg"%cnt2)\n'.format(self.plate_file_name)
-                    nk += '    cnt2 += 1\n'
-                nk += 'cnt1 = cnt2 = 1001\n'
-                nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
-                if self.seq_type != 'lib':
-                    nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
-                nk += 'for target in dpx_output_list:\n'
-                nk += '    os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.dpx"%cnt1)\n'.format(self.plate_file_name)
-                nk += '    cnt1 += 1\n'
-                if self.seq_type != 'lib':
-                    nk += 'for target in jpg_output_list:\n'
-                    nk += '    os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.jpg"%cnt2)\n'.format(self.plate_file_name)
-                    nk += '    cnt2 += 1\n'
-            nk += 'exit()\n'
+                    nk += '        jpg_tmp_list.append(target)\n'
+                    nk += 'dpx_output_list = sorted(dpx_tmp_list)\n'
+                    nk += 'jpg_output_list = sorted(jpg_tmp_list)\n'
+            nk += 'cnt1 = cnt2 = 1001\n'
+            nk += 'for target in dpx_output_list:\n'
+            nk += '    if ".py" not in target: \n'
+            nk += '        os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.org.dpx"%cnt1)\n'.format(self.plate_file_name)
+            nk += '        cnt1 += 1\n'
+            if self.seq_type != 'lib':
+                nk += 'for target in jpg_output_list:\n'
+                nk += '    os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.org.jpg"%cnt2)\n'.format(self.plate_file_name)
+                nk += '    cnt2 += 1\n'
+            nk += 'cnt1 = cnt2 = 1001\n'
+            nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
+            if self.seq_type != 'lib':
+                nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
+            nk += 'for target in dpx_output_list:\n'
+            nk += '    if ".py" not in target: \n'
+            nk += '        os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.dpx"%cnt1)\n'.format(self.plate_file_name)
+            nk += '        cnt1 += 1\n'
+            if self.seq_type != 'lib':
+                nk += 'for target in jpg_output_list:\n'
+                nk += '    os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.jpg"%cnt2)\n'.format(self.plate_file_name)
+                nk += '    cnt2 += 1\n'
+        nk += 'exit()\n'
 
-            if not os.path.exists(os.path.dirname(tmp_dpx_to_jpg_file)):
-                cur_umask = os.umask(0)
-                os.makedirs(os.path.dirname(tmp_dpx_to_jpg_file), 0777)
-                os.umask(cur_umask)
+        if not os.path.exists(os.path.dirname(tmp_dpx_to_jpg_file)):
+            cur_umask = os.umask(0)
+            os.makedirs(os.path.dirname(tmp_dpx_to_jpg_file), 0777)
+            os.umask(cur_umask)
 
-            with open(tmp_dpx_to_jpg_file, 'w') as f:
-                f.write(img_nk)
+        with open(tmp_dpx_to_jpg_file, 'w') as f:
+            f.write(img_nk)
 
-            print tmp_dpx_to_jpg_file
+        print tmp_dpx_to_jpg_file
 
         if not os.path.exists(os.path.dirname(tmp_nuke_script_file)):
             cur_umask = os.umask(0)
