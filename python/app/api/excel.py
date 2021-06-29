@@ -209,7 +209,7 @@ def _create_seq_array(sequences):
         info.insert(MODEL_KEYS['resolution'] , _get_resolution(seq))
         info.insert(MODEL_KEYS['start_frame'], _get_start(seq))
         info.insert(MODEL_KEYS['end_frame'], _get_end(seq))
-        info.insert(MODEL_KEYS['duraiton'],_get_duration(seq))
+        info.insert(MODEL_KEYS['duration'],_get_duration(seq))
         info.insert(MODEL_KEYS['retime_duration'],None)
         info.insert(MODEL_KEYS['retime_percent'],None)
         info.insert(MODEL_KEYS["retime_start_frame"],None)

@@ -85,6 +85,7 @@ class MasterInput(object):
         self.resolution = self._get_data(MODEL_KEYS['resolution'])
         self.start_frame = self._get_data(MODEL_KEYS['start_frame'])
         self.end_frame = self._get_data(MODEL_KEYS['end_frame'])
+        self.duration = self._get_data(MODEL_KEYS['duration'])
         self.framerate = float(self._get_data(MODEL_KEYS['framerate']))
         self.type = self._get_data(MODEL_KEYS['type'])
         self.clip_tag = self._get_data(MODEL_KEYS['clip_tag'])
@@ -175,7 +176,6 @@ class Publish:
         self._app = sgtk.platform.current_bundle()
         self._sg = self._app.shotgun
         self.project = self._app.context.project
-        self.shot_name = self.master_input.entity_name
         self.seq_type = self.master_input.type
         self.user = self._app.context.user
         self.version = self.master_input.version
@@ -195,6 +195,10 @@ class Publish:
             self._tag_name = self.get_tag_name(self.master_input.clip_tag)
             self.clip_lib_name = self._get_clip_lib_name()
             self._proj_ver_ent, self._clip_ver_ent = None, None
+        if self._opt_clip == False:
+            self.shot_name = self.master_input.entity_name
+        else:
+            self.shot_name = self.clip_lib_name
         self.create_seq()
         self.create_shot()
         # self._get_version()
@@ -256,7 +260,10 @@ class Publish:
     def create_job(self):
         self.job = author.Job()
         self.job.title = str('[IOM]' + self.shot_name + " publish")
-        self.job.service = "lib"
+        if self.seq_type == "lib":
+            self.job.service = "lib"
+        else:
+            self.job.service = "Linux64"
         self.job.priority = 10
 
     def create_seq(self, switch=False):
@@ -271,7 +278,7 @@ class Publish:
             print self.shot_ent
         else:
             tags = self._sg_cmd.get_tags(self._tag_name)
-            self.shot_ent = self._sg_cmd.create_shot(self.clip_lib_name)
+            self.shot_ent = self._sg_cmd.create_shot(self.shot_name)
             if 'tags' in self.shot_ent.keys():
                 for tag in tags:
                     if tag not in self.shot_ent['tags']:
@@ -513,16 +520,37 @@ class Publish:
             command = author.Command(argv=cmd)
             self.copy_task.addCommand(command)
 
-        for index in range(0, len(self.copy_file_list)):
-            cmd = ["/bin/cp", "-fv"]
-            cmd.append(os.path.join(scan_path, self.copy_file_list[index]))
-            if self.seq_type != 'lib':
-                cmd.append(os.path.join(self.plate_path, self.plate_file_name + "." + str(1000 + index + 1) + "." + file_ext))
-            else:
-                cmd.append(os.path.join(self.clip_lib_seq_path, self.clip_lib_name + "." + str(1000 + index + 1) + "." + file_ext))
-            command = author.Command(argv=cmd)
+        if self.seq_type != "lib":
+            for index in range(0, len(self.copy_file_list)):
+                cmd = ["/bin/cp", "-fv"]
+                cmd.append(os.path.join(scan_path, self.copy_file_list[index]))
+                if self.seq_type != 'lib':
+                    cmd.append(os.path.join(self.plate_path, self.plate_file_name + "." + str(1000 + index + 1) + "." + file_ext))
+                else:
+                    cmd.append(os.path.join(self.clip_lib_seq_path, self.clip_lib_name + "." + str(1000 + index + 1) + "." + file_ext))
+                command = author.Command(argv=cmd)
+                self.copy_task.addCommand(command)
+        else:
+            cp_script_path = os.path.join(self.clip_lib_seq_path, self.clip_lib_name + "_cp.py")
+            cp_cmd = "import shutil\n"
+            cp_cmd += "import os\n"
+            cp_cmd += "src_dir = '{}'\n".format(scan_path)
+            cp_cmd += "dest_dir = '{}'\n".format(self.clip_lib_seq_path)
+            cp_cmd += "clip_lib_name = '{}'\n".format(self.clip_lib_name)
+            cp_cmd += "cnt = 0\n"
+            cp_cmd += "for x in sorted(os.listdir(src_dir)):\n"
+            cp_cmd += "    src_path = os.path.join(src_dir, x)\n"
+            cp_cmd += "    dest_path = os.path.join(dest_dir, '{}.{}.exr'.format(clip_lib_name, str(1001+cnt)))\n"
+            cp_cmd += "    shutil.copyfile(src_path, dest_path)\n"
+            cp_cmd += "    cnt += 1\n"
+            cp_cmd += "exit()\n"
+            with open(cp_script_path, 'w') as file:
+                file.write(cp_cmd)
+            file.close()
+            print cp_script_path
+            commands = ["python", cp_script_path]
+            command = author.Command(argv=commands)
             self.copy_task.addCommand(command)
-
         self.jpg_task.addChild(self.copy_task)
 
     def create_version(self, switch=False):
@@ -593,6 +621,8 @@ class Publish:
                 "sg_scan_colorspace": self.scan_colorspace
                }
 
+        if self.seq_type == "editor":
+            desc["sg_cut_duration"] = int(self.master_input.duration)
         if self._sg.find_one("Version", key):
             self.version_ent = self._sg.find_one("Version", key)
             self._sg.update("Version", self.version_ent['id'], desc)
@@ -818,15 +848,9 @@ class Publish:
         if self._opt_non_retime == True and switch == True:
             self.nonretime_mp4_task.addChild(self.tmp_rm_jpg_task)
         else:
-            if self._opt_clip == True:
-                self.cliplib_gif_task.addChild(self.mp4_task)
-            else:
-                self.sg_task.addChild(self.mp4_task)
+            self.sg_task.addChild(self.mp4_task)
 
     def create_sg_job(self):
-        if self._opt_clip == True:
-            return None
-
         self.sg_task = author.Task(title="sg version")
         cmd = ['rez-env', 'shotgunapi', '--', 'python', self.sg_script]
         command = author.Command(argv=cmd)
@@ -1382,17 +1406,17 @@ class Publish:
                 nk += 'for target in jpg_output_list:\n'
                 nk += '    os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.jpg"%cnt2)\n'.format(self.plate_file_name)
                 nk += '    cnt2 += 1\n'
-        nk += 'exit()\n'
+            nk += 'exit()\n'
 
-        if not os.path.exists(os.path.dirname(tmp_dpx_to_jpg_file)):
-            cur_umask = os.umask(0)
-            os.makedirs(os.path.dirname(tmp_dpx_to_jpg_file), 0777)
-            os.umask(cur_umask)
+            if not os.path.exists(os.path.dirname(tmp_dpx_to_jpg_file)):
+                cur_umask = os.umask(0)
+                os.makedirs(os.path.dirname(tmp_dpx_to_jpg_file), 0777)
+                os.umask(cur_umask)
 
-        with open(tmp_dpx_to_jpg_file, 'w') as f:
-            f.write(img_nk)
+            with open(tmp_dpx_to_jpg_file, 'w') as f:
+                f.write(img_nk)
 
-        print tmp_dpx_to_jpg_file
+            print tmp_dpx_to_jpg_file
 
         if not os.path.exists(os.path.dirname(tmp_nuke_script_file)):
             cur_umask = os.umask(0)
@@ -1407,8 +1431,6 @@ class Publish:
 
     def create_sg_script(self, switch=False):
         if self._opt_non_retime == True and switch == False and os.path.exists(self.plate_path):
-            return None
-        if self._opt_clip == True:
             return None
         if self.seq_type != 'lib':
             tmp_sg_script_file = os.path.join(self._app.sgtk.project_path, 'seq', self.seq_name, self.shot_name, "plate",
@@ -1462,15 +1484,16 @@ class Publish:
         nk += 'sg = shotgun_api3.Shotgun(WW_SG_HOST,script_name = script_name,api_key=script_key)\n'
         # nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie" )\n'%(self.version_ent['id'],mov_path)
         if switch == False:
-            nk += 'sg.upload_thumbnail( "PublishedFile", %s, "%s")\n' % (self.published_ent['id'], jpg_path)
-            nk += 'sg.upload_thumbnail( "Version", %s, "%s")\n' % (version_ent['id'], jpg_path)
-            nk += 'sg.upload_filmstrip_thumbnail( "Version", %s, "%s")\n' % (version_ent['id'], montage_path)
-            # ** command for real plate duration
-            #nk += 'sg.update( "Shot", {}, {})\n'.format(self.shot_ent['id'], update_desc)
-            if self.seq_type != 'lib':
-                nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_mp4" )\n' % (version_ent['id'], mp4_path01)
-            nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_webm" )\n' % (version_ent['id'], webm_path)
-            if self.seq_type == 'lib':
+            if self._opt_clip == False:
+                nk += 'sg.upload_thumbnail( "PublishedFile", %s, "%s")\n' % (self.published_ent['id'], jpg_path)
+                nk += 'sg.upload_thumbnail( "Version", %s, "%s")\n' % (version_ent['id'], jpg_path)
+                nk += 'sg.upload_filmstrip_thumbnail( "Version", %s, "%s")\n' % (version_ent['id'], montage_path)
+                # ** command for real plate duration
+                #nk += 'sg.update( "Shot", {}, {})\n'.format(self.shot_ent['id'], update_desc)
+                if self.seq_type != 'lib':
+                    nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_mp4" )\n' % (version_ent['id'], mp4_path01)
+                nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_webm" )\n' % (version_ent['id'], webm_path)
+            if self.seq_type == 'lib' or self._opt_clip == True:
                 nk += 'sg.upload_thumbnail( "Version", %s, "%s")\n' % (clip_version_ent['id'], jpg_path)
                 nk += 'sg.upload_filmstrip_thumbnail( "Version", %s, "%s")\n' % (clip_version_ent['id'], montage_path)
                 #nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_mp4" )\n' % (clip_version_ent['id'], mp4_path01)

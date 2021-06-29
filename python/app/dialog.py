@@ -222,20 +222,18 @@ class AppDialog(QtGui.QWidget):
                 tag_name_index = model.createIndex(row, MODEL_KEYS['clip_tag'])
                 tag_name = model.data(tag_name_index, QtCore.Qt.DisplayRole)
                 dict_name = shot_name + "_" + scan_name + "_" + scan_type + "_" + scan_version
-                if shot_name:
-                    if group_model.has_key(dict_name):
-                        group_model[dict_name].append(row)
-                    else:
-                        group_model[dict_name] = []
-                        group_model[dict_name].append(row)
-
-                # seq_source
+                if group_model.has_key(dict_name):
+                    group_model[dict_name].append(row)
                 else:
-                    pass
+                    group_model[dict_name] = []
+                    group_model[dict_name].append(row)
+
+                # # seq_source
+                # else:
+                #     pass
 
         print group_model
         for value in group_model.values():
-            print value
             master_input = publish.MasterInput(model, value, 'shot_name')
 
             opt_dpx = self.ui.mov_dpx_check.isChecked()
