@@ -24,7 +24,7 @@ colorspace_set = {
     "legacy": "LegacyViewer",
     "Cineon": "rec709",
     "rec709": "rec709",
-
+    "Gamma2.4": "Gamma2.4"
 }
 
 
@@ -594,7 +594,7 @@ class Publish:
 
         key = [
                ['entity', 'is', self.shot_ent],
-               ['code', 'is', plate_name]
+               ['code', 'is', plate_name+".mov"]
               ]
 
         project_info = self.project
@@ -639,21 +639,21 @@ class Publish:
             else:
                 self._proj_ver_ent = self.version_ent
             return None
-
-        if switch == False or self.seq_type == "lib":
-            self.version_ent = self._sg.create("Version", desc)
-            print "created a new version with swiwtch false"
-        if switch == True and self._opt_non_retime == True:
-            self.version_tmp_ent = self._sg.create('Version', desc)
-            print "created a new version with swiwtch false"
-        if self._opt_non_retime == True and switch == False:
-            print "created a new version with swiwtch false and nonretime true"
-            return self.create_version(switch=True)
-        if self.seq_type == "lib" and switch == True:
-            self._clip_ver_ent = self.version_ent
         else:
-            self._proj_ver_ent = self.version_ent
-        return None
+            if switch == False or self.seq_type == "lib":
+                self.version_ent = self._sg.create("Version", desc)
+                print "created a new version with swiwtch false"
+            if switch == True and self._opt_non_retime == True:
+                self.version_tmp_ent = self._sg.create('Version', desc)
+                print "created a new version with swiwtch false"
+            if self._opt_non_retime == True and switch == False:
+                print "created a new version with swiwtch false and nonretime true"
+                return self.create_version(switch=True)
+            if self.seq_type == "lib" and switch == True:
+                self._clip_ver_ent = self.version_ent
+            else:
+                self._proj_ver_ent = self.version_ent
+            return None
 
     def create_jpg_job(self, switch=False):
         if self._opt_non_retime == True and os.path.exists(self.plate_path):
@@ -1615,7 +1615,7 @@ class Publish:
             key = [['code', 'is', 'Plate']]
             return self._sg.find_one("PublishedFileType", key, ['id'])
         elif self.seq_type == "ref":
-            key = [['code', 'is', 'Referrence']]
+            key = [['code', 'is', 'Reference']]
             return self._sg.find_one("PublishedFileType", key, ['id'])
         else:
             key = [['code', 'is', 'Source']]
