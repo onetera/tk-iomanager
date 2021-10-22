@@ -618,7 +618,8 @@ class Publish:
                 "sg_path_to_frames": read_path,
                 "sg_first_frame": 1,
                 "sg_version_type": version_type,
-                "sg_scan_colorspace": self.scan_colorspace
+                "sg_scan_colorspace": self.scan_colorspace,
+                "sg_uploaded_movie_frame_rate": float(self.master_input.framerate)
                }
 
         if self.seq_type == "editor":
