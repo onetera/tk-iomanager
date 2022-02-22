@@ -214,6 +214,10 @@ class Collect:
 
                 nk = ''
                 nk += 'from NatronEngine import *\n'
+                nk += 'if sys.version_info.minor == 7 and sys.version_info.micro == 15:\n'
+                nk += '\tapp = app\n'
+                nk += 'else:\n'
+                nk += '\tapp = app1\n'
                 nk += 'read = app.createReader("{}")\n'.format(scan_path)
                 nk += 'read.getParam("ocioInputSpace").setValue("color_picking")\n'
                 nk += 'read.getParam("ocioOutputSpaceIndex").setValue(1)\n'
@@ -298,6 +302,10 @@ class Collect:
 
             nk = ''
             nk += 'from NatronEngine import *\n'
+            nk += 'if sys.version_info.minor == 7 and sys.version_info.micro == 15:\n'
+            nk += '\tapp = app\n'
+            nk += 'else:\n'
+            nk += '\tapp = app1\n'
             nk += 'read = app.createReader("{}")\n'.format(scan_path)
             nk += 'read.getParam("ocioInputSpace").setValue("color_picking")\n'
             nk += 'read.getParam("ocioOutputSpaceIndex").setValue(1)\n'

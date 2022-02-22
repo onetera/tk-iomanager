@@ -1083,6 +1083,10 @@ class Publish:
 
             nk = ''
             nk += 'from NatronEngine import *\n'
+            nk += 'if sys.version_info.minor == 7 and sys.version_info.micro == 15:\n'
+            nk += '\tapp = app\n'
+            nk += 'else:\n'
+            nk += '\tapp = app1\n'
             nk += 'read = app.createReader("{}")\n'.format(scan_path)
             if self.scan_colorspace == 'AlexaV3LogC':
                 nk += 'read.getParam("ocioInputSpace").setValue("AlexaV3LogC")\n'
@@ -1339,6 +1343,10 @@ class Publish:
             nk = ''
             nk += 'import os\n'
             nk += 'from NatronEngine import *\n'
+            nk += 'if sys.version_info.minor == 7 and sys.version_info.micro == 15:\n'
+            nk += '\tapp = app\n'
+            nk += 'else:\n'
+            nk += '\tapp = app1\n'
             nk += 'read = app.createReader("{}")\n'.format(read_path)
             nk += 'read.getParam("firstFrame").setValue({})\n'.format(start_frame)
             nk += 'read.getParam("lastFrame").setValue({})\n'.format(end_frame)
