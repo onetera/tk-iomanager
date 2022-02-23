@@ -214,10 +214,6 @@ class Collect:
 
                 nk = ''
                 nk += 'from NatronEngine import *\n'
-                nk += 'if sys.version_info.minor == 7 and sys.version_info.micro == 15:\n'
-                nk += '\tapp = app\n'
-                nk += 'else:\n'
-                nk += '\tapp = app1\n'
                 nk += 'read = app.createReader("{}")\n'.format(scan_path)
                 nk += 'read.getParam("ocioInputSpace").setValue("color_picking")\n'
                 nk += 'read.getParam("ocioOutputSpaceIndex").setValue(1)\n'
@@ -228,7 +224,12 @@ class Collect:
                 nk += 'write.getParam("ocioInputSpace").setValue("color_picking")\n'
                 nk += 'write.getParam("ocioOutputSpaceIndex").setValue(1)\n'
                 nk += 'write.getParam("frameRange").setValue(0)\n'
-                nk += 'write.getParam("format").setValue(5)\n'
+                nk += 'if sys.version_info.minor == 7 and sys.version_info.micro == 15:\n'
+                
+                nk += '\nwrite.getParam("format").setValue(5)\n'
+                nk += 'else:\n'
+                nk += '\twrite.getParam("format").setValue(4)\n'
+
                 nk += 'write.getParam("codec").setValue(1)\n'
                 nk += 'write.getParam("fps").setValue({})\n'.format(framerate)
                 nk += 'app.render(write,{0},{1})\n'.format(int(just_in),int(just_out))
@@ -302,10 +303,6 @@ class Collect:
 
             nk = ''
             nk += 'from NatronEngine import *\n'
-            nk += 'if sys.version_info.minor == 7 and sys.version_info.micro == 15:\n'
-            nk += '\tapp = app\n'
-            nk += 'else:\n'
-            nk += '\tapp = app1\n'
             nk += 'read = app.createReader("{}")\n'.format(scan_path)
             nk += 'read.getParam("ocioInputSpace").setValue("color_picking")\n'
             nk += 'read.getParam("ocioOutputSpaceIndex").setValue(1)\n'
