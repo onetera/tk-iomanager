@@ -1220,6 +1220,7 @@ class Publish:
         nk += 'write.getParam("ocioInputSpace").setValue("color_picking")\n'
         nk += 'write.getParam("ocioOutputSpaceIndex").setValue(1)\n'
         nk += 'write.getParam("frameRange").setValue(0)\n'
+        nk += 'write.getParam("bitDepth").setValue( "10i" )\n'
         nk += 'app.render(write,{0},{1})\n'.format(start_frame, end_frame)
         return nk
 
