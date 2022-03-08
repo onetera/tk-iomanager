@@ -944,7 +944,7 @@ class Publish:
 
         if self.jpg4mov_output: 
             import shutil
-            shutil.rmtree( os.path.dirname( self.jpg4mov_output )
+            shutil.rmtree( os.path.dirname( self.jpg4mov_output ) )
         
         # cmd = ['rm','-f',self.copy_script]
         # command = author.Command(argv=cmd)
