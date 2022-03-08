@@ -1217,6 +1217,7 @@ class Publish:
         nk = ''
         nk += 'write = app.createWriter("{}")\n'.format(dpx_path)
         nk += 'write.connectInput(0,{})\n'.format(input_node)
+        nk += 'write.getParam( "outputComponents" ).setValue( "RGB" )\n'
         nk += 'write.getParam("ocioInputSpace").setValue("color_picking")\n'
         nk += 'write.getParam("ocioOutputSpaceIndex").setValue(1)\n'
         nk += 'write.getParam("frameRange").setValue(0)\n'
