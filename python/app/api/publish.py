@@ -1060,6 +1060,8 @@ class Publish:
         nk += 'read = nuke.nodes.Read( file = "{}" )\n'.format( mov_path )
         nk += 'read["first"].setValue( {} )\n'.format( int(first) )
         nk += 'read["last"].setValue( {} )\n'.format( int( last) )
+        nk += 'nuke.knob("root.first_frame", "{}" )\n'.format( int( first ))
+        nk += 'nuke.knob("root.last_frame", "{}" )\n'.format( int( last ))
         nk += 'read["colorspace"].setValue( "AlexaV3LogC" )\n'
         nk += 'write = nuke.nodes.Write(name="ww_write", inputs = [read], file="{}" )\n'.format( output )
         nk += 'write["file_type"].setValue( "jpeg" )\n'
