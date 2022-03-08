@@ -184,6 +184,9 @@ class Publish:
         self.scan_colorspace = scan_colorspace
         self.use_natron = False
 
+        self.jpg4mov_alexaV3logC_py = ''
+        self.jpg4mov_output = ''
+
         self._app = sgtk.platform.current_bundle()
         self._sg = self._app.shotgun
         self.project = self._app.context.project
@@ -364,6 +367,7 @@ class Publish:
             self.jpg_task.addChild(self.org_task)
         else:
             self.create_copy_job()
+
 
     def create_clip_lib_job(self):
         if self._opt_clip == False:
@@ -935,6 +939,13 @@ class Publish:
         command = author.Command(argv=cmd)
         self.rm_task.addCommand(command)
 
+        if os.path.exists( self.jpg4mov_alexaV3logC_py ) : 
+            os.remove( self.jpg4mov_alexaV3logC_py )
+
+        if self.jpg4mov_output: 
+            import shutil
+            shutil.rmtree( os.path.dirname( self.jpg4mov_output )
+        
         # cmd = ['rm','-f',self.copy_script]
         # command = author.Command(argv=cmd)
         # self.rm_task.addCommand(command)
@@ -1096,11 +1107,14 @@ class Publish:
                                 self.seq_name,
                                 self.shot_name, "plate",
                                 self.plate_file_name + ".mov")
+
         tmp_nuke_script_file = os.path.join(self._app.sgtk.project_path, 'seq',
                                             self.seq_name,
                                             self.shot_name, "plate",
                                             self.plate_file_name + "_mov.py")
 
+        if not os.path.exists( mov_path ):
+            os.system( 'touch ' + mov_path )
 
         if self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h":
             self.use_natron = True
@@ -1108,26 +1122,26 @@ class Publish:
             nk = 'import os\n'
             nk += 'from NatronEngine import *\n'
             if self.scan_colorspace == 'AlexaV3LogC':
-                jpg4mov_alexaV3logC_py = os.path.join(self._app.sgtk.project_path, 'seq',
+                self.jpg4mov_alexaV3logC_py = os.path.join(self._app.sgtk.project_path, 'seq',
                                                     self.seq_name,
                                                     self.shot_name, "plate",
                                                     self.plate_file_name + "_jpg4mov_alexa.py")
 
-                jpg4mov_output = os.path.join( 
+                self.jpg4mov_output = os.path.join( 
                                                 os.path.dirname( mov_path ), 
                                                 "_temp_jpg",
                                                 os.path.splitext( os.path.basename(mov_path) )[0] + ".%04d.jpg"
                                                 )
                 jpg4mov_nk = self.create_jpg_for_mov( 
                                                         scan_path, self.master_input.just_in, 
-                                                        self.master_input.just_out, jpg4mov_output 
+                                                        self.master_input.just_out, self.jpg4mov_output 
                                                     )                                    
 
-                with open( jpg4mov_alexaV3logC_py, 'w' ) as f:
+                with open( self.jpg4mov_alexaV3logC_py, 'w' ) as f:
                     f.write( jpg4mov_nk )
-                nk += 'os.system( "rez-env nuke-11 alexa_config -- nuke -ix {}" )\n'.format( jpg4mov_alexaV3logC_py )
-                nk += 'os.remove( "{}" )\n'.format( jpg4mov_alexaV3logC_py )
-                nk += 'read = app.createReader("{}")\n'.format( jpg4mov_output )
+                nk += 'os.system( "rez-env nuke-11 alexa_config -- nuke -ix {}" )\n'.format( self.jpg4mov_alexaV3logC_py )
+#                nk += 'os.remove( "{}" )\n'.format( self.jpg4mov_alexaV3logC_py )
+                nk += 'read = app.createReader("{}")\n'.format( self.jpg4mov_output )
                 nk += 'read.getParam("ocioInputSpace").setValue("rec709")\n'
                 nk += 'read.getParam("ocioOutputSpace").setValue("linear")\n'
 
@@ -1167,9 +1181,9 @@ class Publish:
             nk += 'write.getParam("codec").setValue({})\n'.format(codec_index)
             nk += 'write.getParam("fps").setValue({})\n'.format(self.master_input.framerate)
             nk += 'app.render(write,{0},{1})\n'.format(int(self.master_input.just_in), int(self.master_input.just_out))
-            if self.scan_colorspace == 'AlexaV3LogC':
-                nk += 'import shutil\n'
-                nk += 'shutil.rmtree( "{}" )\n'.format( os.path.dirname( jpg4mov_output ) )
+#            if self.scan_colorspace == 'AlexaV3LogC':
+#                nk += 'import shutil\n'
+#                nk += 'shutil.rmtree( "{}" )\n'.format( os.path.dirname( self.jpg4mov_output ) )
             nk += 'exit()\n'
 
         else:
