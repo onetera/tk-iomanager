@@ -940,11 +940,14 @@ class Publish:
         self.rm_task.addCommand(command)
 
         if os.path.exists( self.jpg4mov_alexaV3logC_py ) : 
-            os.remove( self.jpg4mov_alexaV3logC_py )
+            cmd = ['rm', '-f', self.jpg4mov_alexaV3logC_py ]
+            command = author.Command(argv=cmd)
+            self.rm_task.addCommand(command)
 
         if self.jpg4mov_output: 
-            import shutil
-            shutil.rmtree( os.path.dirname( self.jpg4mov_output ) )
+            cmd = ['rm', '-f', self.jpg4mov_output ]
+            command = author.Command(argv=cmd)
+            self.rm_task.addCommand(command)
         
         # cmd = ['rm','-f',self.copy_script]
         # command = author.Command(argv=cmd)
