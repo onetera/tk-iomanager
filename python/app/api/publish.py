@@ -1060,6 +1060,8 @@ class Publish:
         nk += 'read = nuke.nodes.Read( file = "{}" )\n'.format( mov_path )
         nk += 'read["first"].setValue( {} )\n'.format( int(first) )
         nk += 'read["last"].setValue( {} )\n'.format( int( last) )
+        nk += 'nuke.knob("root.first_frame", "{}" )\n'.format( int( first ))
+        nk += 'nuke.knob("root.last_frame", "{}" )\n'.format( int( last ))
         nk += 'read["colorspace"].setValue( "AlexaV3LogC" )\n'
         nk += 'write = nuke.nodes.Write(name="ww_write", inputs = [read], file="{}" )\n'.format( output )
         nk += 'write["file_type"].setValue( "jpeg" )\n'
@@ -1124,7 +1126,7 @@ class Publish:
                 with open( jpg4mov_alexaV3logC_py, 'w' ) as f:
                     f.write( jpg4mov_nk )
                 nk += 'os.system( "rez-env nuke-11 alexa_config -- nuke -ix {}" )\n'.format( jpg4mov_alexaV3logC_py )
-                #nk += 'os.remove( "{}" )\n'.format( jpg4mov_alexaV3logC_py )
+                nk += 'os.remove( "{}" )\n'.format( jpg4mov_alexaV3logC_py )
                 nk += 'read = app.createReader("{}")\n'.format( jpg4mov_output )
                 nk += 'read.getParam("ocioInputSpace").setValue("rec709")\n'
                 nk += 'read.getParam("ocioOutputSpace").setValue("linear")\n'
@@ -1167,7 +1169,7 @@ class Publish:
             nk += 'app.render(write,{0},{1})\n'.format(int(self.master_input.just_in), int(self.master_input.just_out))
             if self.scan_colorspace == 'AlexaV3LogC':
                 nk += 'import shutil\n'
-                #nk += 'shutil.rmtree( "{}" )\n'.format( os.path.dirname( jpg4mov_output ) )
+                nk += 'shutil.rmtree( "{}" )\n'.format( os.path.dirname( jpg4mov_output ) )
             nk += 'exit()\n'
 
         else:
