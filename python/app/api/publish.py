@@ -380,7 +380,7 @@ class Publish:
                 os.makedirs(self.clip_lib_seq_path, 0777)
                 os.umask(cur_umask)
 
-            if self.master_input.ext == 'mov':
+            if self.master_input.ext in ['mov',"mxf"]:
                 clip_mov_name = self.clip_lib_name + '.mov'
                 command = ['/bin/cp', '-fv']
                 target_path = self.master_input.scan_path
@@ -600,7 +600,7 @@ class Publish:
                                     plate_name + ".mov")
 
         read_path = os.path.join(plate_seq_path, plate_name + ".%04d." + self.file_ext)
-        if self.master_input.ext == "mov" and self.seq_type != 'lib':
+        if self.master_input.ext in ["mov","mxf"] and self.seq_type != 'lib':
             colorspace = self.scan_colorspace.replace("ACES-", "")
             read_path = os.path.join(self._app.sgtk.project_path, 'seq',
                                      self.seq_name,
@@ -619,7 +619,7 @@ class Publish:
             project_info = self.clip_project
         if self.seq_type == 'lib':
             file_type = 'exr'
-            if self.master_input.ext == 'mov':
+            if self.master_input.ext in ['mov','mxf']:
                 file_type = 'dpx'
             read_path = os.path.join(self.clip_lib_seq_path, self.clip_lib_name + ".%04d." + file_type)
             mov_path = '/' + os.path.join('stock', 'mov', self.clip_lib_name + ".mov")
@@ -692,7 +692,7 @@ class Publish:
                 cmd = ['rez-env', 'nuke-11', 'alexa_config', '--', 'nuke', '-ix', self.nuke_script]
             if not self.scan_colorspace.find("legacy") == -1:
                 cmd = ['rez-env', 'nuke-11', 'legacy_config', '--', 'nuke', '-ix', self.nuke_script]
-        if self.master_input.ext == "mov" and self._opt_dpx == False:
+        if self.master_input.ext in ["mov","mxf"] and self._opt_dpx == False:
             cmd = ["echo", "'pass'"]
 
         if switch == False:
@@ -1093,7 +1093,7 @@ class Publish:
         if self._opt_non_retime == True and os.path.exists(self.plate_path):
             return None
 
-        if not self.master_input.ext == "mov":
+        if not self.master_input.ext  in ["mov","mxf"]:
             return
 
         width, height = self.master_input.resolution.split("x")
@@ -1321,7 +1321,7 @@ class Publish:
                 end_frame = 1000 + int(frame_count)
                 read_path = os.path.join(self.plate_path, self.plate_file_name + ".%04d." + self.file_ext)
             else:
-                if self.master_input.ext != 'mov':
+                if not self.master_input.ext in ['mov',"mxf"]:
                     filename = '.'.join([self.master_input.scan_name[:-1], self.master_input.pad, self.master_input.ext])
                 else:
                     filename = self.master_input.scan_name
@@ -1799,7 +1799,7 @@ class Publish:
         published_file = os.path.join(self.plate_path, self.plate_file_name + ".%04d." + file_ext)
         if self.seq_type == 'lib':
             published_file = os.path.join(self.clip_lib_seq_path, self.clip_lib_name + ".%04d." + file_ext)
-        if self.master_input.ext == "mov":
+        if self.master_input.ext in ["mov","mxf"]:
             if self._opt_dpx == False:
                 published_file = os.path.join(self._app.sgtk.project_path, 'seq',
                                               self.seq_name,

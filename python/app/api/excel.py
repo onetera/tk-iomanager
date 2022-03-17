@@ -61,7 +61,9 @@ class MOV_INFO:
         probe = ffmpeg.probe(mov_file)
         video_stream = next((stream for stream in probe['streams'] 
                              if stream['codec_type'] == 'video'), None)
-        
+        print(video_stream)
+        print(video_stream)
+        print(video_stream)
         if video_stream : 
             return video_stream
         
@@ -95,7 +97,10 @@ class MOV_INFO:
             start_frame = Timecode(round(self.framerate()),start_timecode).frame_number
             duraiton = end_frame - start_frame
             return duraiton
-        return self.video_stream['nb_frames']
+        try:
+            return self.video_stream['nb_frames']
+        except :
+            return self.video_stream['duration_ts']
 
     def start(self):
         if self.event:
@@ -200,7 +205,7 @@ def _create_seq_array(sequences):
         info.insert(MODEL_KEYS['type'], "org")
         info.insert(MODEL_KEYS['scan_path'], seq.dirname)
         info.insert(MODEL_KEYS['scan_name'], seq.head())
-        if _get_ext(seq) == "mov":
+        if _get_ext(seq) in  ["mov" , "mxf"]:
             info.insert(MODEL_KEYS['clip_name'], seq.clip_name)
         else:
             info.insert(MODEL_KEYS['clip_name'], seq.head())
@@ -213,7 +218,7 @@ def _create_seq_array(sequences):
         info.insert(MODEL_KEYS['retime_duration'],None)
         info.insert(MODEL_KEYS['retime_percent'],None)
         info.insert(MODEL_KEYS["retime_start_frame"],None)
-        if _get_ext(seq) == "mov":
+        if _get_ext(seq) in  ["mov" , "mxf"]:
             if seq.cutitem:
                 info.insert(MODEL_KEYS['timecode_in'],str(seq.cutitem.start_tc))
                 info.insert(MODEL_KEYS['timecode_out'],str(seq.cutitem.end_tc))
@@ -238,7 +243,7 @@ def _get_thumbnail(seq,sequences):
     
 
 
-    if _get_ext(seq)== "mov":
+    if _get_ext(seq) in ["mov","mxf"]:
         
         
 
@@ -296,9 +301,9 @@ def _get_thumbnail(seq,sequences):
         return thumbnail_file
         
 def _get_duration(seq):
-    if _get_ext(seq)== "mov":
-
+    if _get_ext(seq) in ["mov","mxf"]:
         return seq.frames()
+
     else:
         return len(seq.frames())
         
@@ -316,7 +321,7 @@ def _get_ext(seq):
     return seq.tail().split(".")[-1]
 
 def _get_time_code(seq,frame):
-    if _get_ext(seq) == "mov":
+    if _get_ext(seq) in ["mov","mxf"]:
 
         mov_file = os.path.join(seq.dirname,seq.head())
         video_stream = MOV_INFO.video_stream(mov_file)
@@ -361,7 +366,7 @@ def _get_time_code(seq,frame):
 
 def _get_framerate(seq):
 
-    if _get_ext(seq) == "mov":
+    if _get_ext(seq) in  ["mov" , "mxf"]:
 
         mov_file = os.path.join(seq.dirname,seq.head())
         video_stream = MOV_INFO.video_stream(mov_file)
@@ -399,7 +404,7 @@ def _get_framerate(seq):
 
 def _get_resolution(seq):
 
-    if _get_ext(seq) == "mov":
+    if _get_ext(seq) in ["mov","mxf"]:
 
         mov_file = os.path.join(seq.dirname,seq.head())
         video_stream = MOV_INFO.video_stream(mov_file)
@@ -483,6 +488,10 @@ def _get_movs(path):
     movs = []
 
     mov_files = glob.glob(os.path.join(path,"*.mov"))
+    mxf_files =  glob.glob(os.path.join(path,"*.mxf"))
+    if mxf_files:
+        mov_files.extend(mxf_files)
+
     
     for mov_file in mov_files:
         
