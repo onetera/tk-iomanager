@@ -638,13 +638,19 @@ class Publish:
                }
 
         if self.seq_type == "editor":
-            desc["sg_cut_duration"] = int(self.master_input.duration)
+            ## duration 값만 올라 가는 방식에서 just_out - just_in + 1 방식으로 변경
+            #desc["sg_cut_duration"] = int(self.master_input.duration)
+            desc['sg_cut_duration'] = int( self.master_input.just_out ) - int( self.master_input.just_in ) + 1 
+
+
+
+
         if self._sg.find_one("Version", key):
             self.version_ent = self._sg.find_one("Version", key)
             self._sg.update("Version", self.version_ent['id'], desc)
             print "found the existed version with switch false"
             if switch == True and self._opt_non_retime == True:
-                self.version_tmp_ent = self._sg.find_one("Version", key)
+                self. version_tmp_ent = self._sg.find_one("Version", key)
                 self._sg.update("Version", self.version_tmp_ent['id'], desc)
                 print "found the existed version with switch true"
             if self._opt_non_retime == True and switch == False:
