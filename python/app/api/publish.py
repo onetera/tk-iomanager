@@ -28,6 +28,7 @@ colorspace_set = {
     "legacy": "LegacyViewer",
     "Cineon": "rec709",
     "rec709": "rec709",
+    "Output - Rec709": "Output - Rec709",
     "Gamma2.4": "Gamma2.4"
 }
 
