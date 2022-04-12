@@ -37,6 +37,7 @@ COLORSPACE=[
     "ACES - ACES2065-1",
     "ACES - ACEScg",
     "rec709",
+    "Ouput - Rec709",
     "Cineon",
     "AlexaV3LogC",
     "legacy"
