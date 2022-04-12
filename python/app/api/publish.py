@@ -1464,6 +1464,8 @@ class Publish:
                 color_config = 'alexa_config'
             if not self.scan_colorspace.find("legacy") == -1:
                 color_config = 'legacy_config'
+            if not self.scan_colorspace.find( 'Output' ) == -1:
+                color_config = 'ocio_config'
 
             nk += 'os.system("rez-env nuke-11 {} -- nuke -ix {}")\n'.format(color_config, tmp_dpx_to_jpg_file)
             # if int(width) > 2048:
