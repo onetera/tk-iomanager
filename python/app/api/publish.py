@@ -352,6 +352,8 @@ class Publish:
             cmd = ['rez-env', 'nuke-11', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("ACES") == -1:
                 cmd = ['rez-env', 'nuke-11', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+            if not self.scan_colorspace.find( 'Output' ) == -1:
+                cmd = ['rez-env', 'nuke-11', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("Alexa") == -1:
                 cmd = ['rez-env', 'nuke-11', 'alexa_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("legacy") == -1:
@@ -363,6 +365,12 @@ class Publish:
                     cmd = ["echo", "'pass'"]
             if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
                 cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
+
+#            print('\n')
+#            print( cmd )
+#            print( self.scan_colorspace )
+#            print('\n')
+
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
             self.jpg_task.addChild(self.org_task)
