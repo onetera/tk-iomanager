@@ -22,7 +22,7 @@ colorspace_set = {
     "AlexaV3LogC"       : "AlexaViewer",
     "Cineon"            : "rec709",
     "rec709"            : "rec709",
-    "Output - Rec709"            : "Output - Rec709",
+    "Output - Rec.709"  : "Output - Rec.709",
 
 }
 
