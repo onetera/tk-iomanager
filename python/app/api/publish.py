@@ -960,7 +960,7 @@ class Publish:
             self.rm_task.addCommand(command)
 
         if self.jpg4mov_output: 
-            cmd = ['rm', '-f', self.jpg4mov_output ]
+            cmd = ['rm', '-f', os.path.dirname( self.jpg4mov_output ) ]
             command = author.Command(argv=cmd)
             self.rm_task.addCommand(command)
         
