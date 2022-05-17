@@ -673,12 +673,12 @@ class Publish:
         else:
             if switch == False or self.seq_type == "lib":
                 self.version_ent = self._sg.create("Version", desc)
-                print "created a new version with swiwtch false"
+                print "created a new version with switch false"
             if switch == True and self._opt_non_retime == True:
                 self.version_tmp_ent = self._sg.create('Version', desc)
-                print "created a new version with swiwtch false"
+                print "created a new version with switch false"
             if self._opt_non_retime == True and switch == False:
-                print "created a new version with swiwtch false and nonretime true"
+                print "created a new version with switch false and nonretime true"
                 return self.create_version(switch=True)
             if self.seq_type == "lib" and switch == True:
                 self._clip_ver_ent = self.version_ent
@@ -1198,10 +1198,12 @@ class Publish:
                 codec_index = 1
             nk += 'write.getParam("codec").setValue({})\n'.format(codec_index)
             nk += 'write.getParam("fps").setValue({})\n'.format(self.master_input.framerate)
+            nk += 'write.getParam("formatType").setValue(0)\n'
             nk += 'app.render(write,{0},{1})\n'.format(int(self.master_input.just_in), int(self.master_input.just_out))
 #            if self.scan_colorspace == 'AlexaV3LogC':
 #                nk += 'import shutil\n'
 #                nk += 'shutil.rmtree( "{}" )\n'.format( os.path.dirname( self.jpg4mov_output ) )
+#            nk += 'write.getOutputFormat().set(0,0,{0},{1})\n'.format(int(width), int(height))
             nk += 'exit()\n'
 
         else:
