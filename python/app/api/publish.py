@@ -835,9 +835,8 @@ class Publish:
 
         if select_code == 0:
             select_code = 1
-
-        date_text = "drawtext='fontfile=/westworld/inhouse/ww_font/Vera.ttf:text=\%{localtime \\\: 2020-\%m-\%d }:fontcolor=white:fontsize=250:box=1:boxcolor=black@0.5:boxborderw=5'"
-
+        now_time = datetime.datetime.now()
+        date_text = "drawtext='fontfile=/westworld/inhouse/ww_font/Vera.ttf:text= {} :fontcolor=white:fontsize=200:box=1:boxcolor=black@0.5:boxborderw=5'".format(now_time.strftime("%Y-%m-%d"))
         command = ['rez-env', "ffmpeg", "--", "ffmpeg", "-y"]
         command.append("-r")
         command.append("24")
@@ -1158,7 +1157,7 @@ class Publish:
                 with open( self.jpg4mov_alexaV3logC_py, 'w' ) as f:
                     f.write( jpg4mov_nk )
                 nk += 'os.system( "rez-env nuke-11 alexa_config -- nuke -ix {}" )\n'.format( self.jpg4mov_alexaV3logC_py )
-#                nk += 'os.remove( "{}" )\n'.format( self.jpg4mov_alexaV3logC_py )
+                nk += 'os.remove( "{}" )\n'.format( self.jpg4mov_alexaV3logC_py )
                 nk += 'read = app.createReader("{}")\n'.format( self.jpg4mov_output )
                 nk += 'read.getParam("ocioInputSpace").setValue("rec709")\n'
                 nk += 'read.getParam("ocioOutputSpace").setValue("linear")\n'
