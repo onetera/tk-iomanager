@@ -1062,7 +1062,7 @@ class Publish:
 #            nk += 'retime["filter"].setValue( "none" )\n'
 #            nk += 'retime["output.first_lock"].setValue( "true" )\n'
 #            tg = 'retime'
-            nk += 'retime = nuke.nodes.Kronos( inputs [%s] ) \n' % tg 
+            nk += 'retime = nuke.nodes.Kronos( inputs= [%s] ) \n' % tg 
             nk += 'retime["input.last"].setValue({} )\n'.format(int(round( self.master_input.end_frame)))
             if int(info['retime_percent']) < 0:
                 nk += 'retime["timingOutputSpeed"].setValue( {})\n'.format(-float(info['retime_percent']) / 100.0)
