@@ -1048,20 +1048,33 @@ class Publish:
                 # nk += 'reverse_retime["speed"].setValue(1)\n'
                 tg = 'reverse_retime'
 
-            nk += 'retime = nuke.nodes.Retime(inputs = [%s])\n' % tg
-            nk += 'retime["input.first_lock"].setValue( "true" )\n'
-            # nk += 'retime["input.last_lock"].setValue( "true" )\n'
-            nk += 'retime["input.last"].setValue({} )\n'.format(int(self.master_input.end_frame))
+#            nk += 'retime = nuke.nodes.Retime(inputs = [%s])\n' % tg
+#            nk += 'retime["input.first_lock"].setValue( "true" )\n'
+#            # nk += 'retime["input.last_lock"].setValue( "true" )\n'
+#            nk += 'retime["input.last"].setValue({} )\n'.format(int(self.master_input.end_frame))
+#            if int(info['retime_percent']) < 0:
+#                # nk += 'retime["reverse"].setValue( "true" )\n'
+#                nk += 'retime["speed"].setValue( {})\n'.format(-float(info['retime_percent']) / 100.0)
+#                # nk += 'read["frame"].setValue( "frame-{}")\n'.format( int(info['just_in']- int(self.master_input.start_frame)))
+#                nk += 'read["frame"].setValue( "frame-{}")\n'.format(int(info['just_in']) - 1)
+#            else:
+#                nk += 'retime["speed"].setValue( {})\n'.format(float(info['retime_percent']) / 100.0)
+#            nk += 'retime["filter"].setValue( "none" )\n'
+#            nk += 'retime["output.first_lock"].setValue( "true" )\n'
+#            tg = 'retime'
+            nk += 'retime = nuke.nodes.Kronos( inputs [%s] ) \n' % tg 
+            nk += 'retime["input.last"].setValue({} )\n'.format(int(round( self.master_input.end_frame)))
             if int(info['retime_percent']) < 0:
-                # nk += 'retime["reverse"].setValue( "true" )\n'
-                nk += 'retime["speed"].setValue( {})\n'.format(-float(info['retime_percent']) / 100.0)
-                # nk += 'read["frame"].setValue( "frame-{}")\n'.format( int(info['just_in']- int(self.master_input.start_frame)))
+                nk += 'retime["timingOutputSpeed"].setValue( {})\n'.format(-float(info['retime_percent']) / 100.0)
                 nk += 'read["frame"].setValue( "frame-{}")\n'.format(int(info['just_in']) - 1)
             else:
-                nk += 'retime["speed"].setValue( {})\n'.format(float(info['retime_percent']) / 100.0)
-            nk += 'retime["filter"].setValue( "none" )\n'
-            nk += 'retime["output.first_lock"].setValue( "true" )\n'
+                nk += 'retime["timingOutputSpeed"].setValue( {})\n'.format(float(info['retime_percent']) / 100.0)
+           # nk += 'retime["filter"].setValue( "none" )\n'
+           # nk += 'retime["output.first_lock"].setValue( "true" )\n'
             tg = 'retime'
+
+
+
             nk += 'output = "{}"\n'.format(org_path)
             nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n' % tg
             nk += 'write["file_type"].setValue( "{}" )\n'.format(self.file_ext)
