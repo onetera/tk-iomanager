@@ -55,6 +55,13 @@ class Ui_Dialog(object):
         self.clip_check = QtGui.QCheckBox()
         self.horizontalLayout_3.addWidget(self.label_5)
         self.horizontalLayout_3.addWidget(self.clip_check)
+
+        self.label_6 = QtGui.QLabel(Dialog)
+        self.label_6.setObjectName('label_6')
+        self.smooth_check = QtGui.QCheckBox()
+        self.horizontalLayout_3.addWidget(self.label_6)
+        self.horizontalLayout_3.addWidget(self.smooth_check)
+
         self.label_2 = QtGui.QLabel(Dialog)
         self.label_2.setObjectName("label_2")
         self.horizontalLayout_3.addWidget(self.label_2)
@@ -134,6 +141,7 @@ class Ui_Dialog(object):
         self.label_3.setText(QtGui.QApplication.translate("Dialog", "MOV to DPX", None, QtGui.QApplication.UnicodeUTF8))
         self.label_4.setText(QtGui.QApplication.translate("Dialog", "Non Retime", None, QtGui.QApplication.UnicodeUTF8))
         self.label_5.setText(QtGui.QApplication.translate("Dialog", "ClipLib", None, QtGui.QApplication.UnicodeUTF8))
+        self.label_6.setText(QtGui.QApplication.translate("Dialog", "Smooth Retime", None, QtGui.QApplication.UnicodeUTF8))
         self.groupBox_2.setTitle(QtGui.QApplication.translate("Dialog", "Excel", None, QtGui.QApplication.UnicodeUTF8))
         self.save_excel.setText(QtGui.QApplication.translate("Dialog", "Save", None, QtGui.QApplication.UnicodeUTF8))
         self.edit_excel.setText(QtGui.QApplication.translate("Dialog", "Edit", None, QtGui.QApplication.UnicodeUTF8))
