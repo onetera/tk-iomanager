@@ -180,7 +180,7 @@ class MasterInput(object):
 
 
 class Publish:
-    def __init__(self, master_input, scan_colorspace, opt_dpx, opt_non_retime, opt_clip, parent=None):
+    def __init__(self, master_input, scan_colorspace, opt_dpx, opt_non_retime, opt_clip, smooth_retime, parent=None):
         self.master_input = master_input
         self.scan_colorspace = scan_colorspace
         self.use_natron = False
@@ -205,6 +205,7 @@ class Publish:
         self._opt_dpx = opt_dpx
         self._opt_non_retime = opt_non_retime
         self._opt_clip = opt_clip
+        self._smooth_retime = smooth_retime
 
         if self.seq_type == "lib":
             self._tag_name = self.get_tag_name(self.master_input.clip_tag)
@@ -1048,32 +1049,27 @@ class Publish:
                 # nk += 'reverse_retime["speed"].setValue(1)\n'
                 tg = 'reverse_retime'
 
-#            nk += 'retime = nuke.nodes.Retime(inputs = [%s])\n' % tg
-#            nk += 'retime["input.first_lock"].setValue( "true" )\n'
-#            # nk += 'retime["input.last_lock"].setValue( "true" )\n'
-#            nk += 'retime["input.last"].setValue({} )\n'.format(int(self.master_input.end_frame))
-#            if int(info['retime_percent']) < 0:
-#                # nk += 'retime["reverse"].setValue( "true" )\n'
-#                nk += 'retime["speed"].setValue( {})\n'.format(-float(info['retime_percent']) / 100.0)
-#                # nk += 'read["frame"].setValue( "frame-{}")\n'.format( int(info['just_in']- int(self.master_input.start_frame)))
-#                nk += 'read["frame"].setValue( "frame-{}")\n'.format(int(info['just_in']) - 1)
-#            else:
-#                nk += 'retime["speed"].setValue( {})\n'.format(float(info['retime_percent']) / 100.0)
-#            nk += 'retime["filter"].setValue( "none" )\n'
-#            nk += 'retime["output.first_lock"].setValue( "true" )\n'
-#            tg = 'retime'
-            nk += 'retime = nuke.nodes.Kronos( inputs= [%s] ) \n' % tg 
-            nk += 'retime["input.last"].setValue({} )\n'.format(int(round( self.master_input.end_frame)))
-            if int(info['retime_percent']) < 0:
-                nk += 'retime["timingOutputSpeed"].setValue( {})\n'.format(-float(info['retime_percent']) / 100.0)
-                nk += 'read["frame"].setValue( "frame-{}")\n'.format(int(info['just_in']) - 1)
+            if not self._smooth_retime:
+                nk += 'retime = nuke.nodes.Retime(inputs = [%s])\n' % tg
+                nk += 'retime["input.first_lock"].setValue( "true" )\n'
+                nk += 'retime["input.last"].setValue({} )\n'.format(int(self.master_input.end_frame))
+                if int(info['retime_percent']) < 0:
+                    nk += 'retime["speed"].setValue( {})\n'.format(-float(info['retime_percent']) / 100.0)
+                    nk += 'read["frame"].setValue( "frame-{}")\n'.format(int(info['just_in']) - 1)
+                else:
+                    nk += 'retime["speed"].setValue( {})\n'.format(float(info['retime_percent']) / 100.0)
+                nk += 'retime["filter"].setValue( "none" )\n'
+                nk += 'retime["output.first_lock"].setValue( "true" )\n'
             else:
-                nk += 'retime["timingOutputSpeed"].setValue( {})\n'.format(float(info['retime_percent']) / 100.0)
-           # nk += 'retime["filter"].setValue( "none" )\n'
-           # nk += 'retime["output.first_lock"].setValue( "true" )\n'
+                nk += 'retime = nuke.nodes.Kronos( inputs= [%s] ) \n' % tg 
+                nk += 'retime["input.last"].setValue({} )\n'.format(int(round( self.master_input.end_frame)))
+                if int(info['retime_percent']) < 0:
+                    nk += 'retime["timingOutputSpeed"].setValue( {})\n'.format(-float(info['retime_percent']) / 100.0)
+                    nk += 'read["frame"].setValue( "frame-{}")\n'.format(int(info['just_in']) - 1)
+                else:
+                    nk += 'retime["timingOutputSpeed"].setValue( {})\n'.format(float(info['retime_percent']) / 100.0)
+
             tg = 'retime'
-
-
 
             nk += 'output = "{}"\n'.format(org_path)
             nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n' % tg

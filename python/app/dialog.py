@@ -239,7 +239,8 @@ class AppDialog(QtGui.QWidget):
             opt_dpx = self.ui.mov_dpx_check.isChecked()
             opt_non_retime = self.ui.non_retime_check.isChecked()
             opt_clip = self.ui.clip_check.isChecked()
-            publish.Publish(master_input, colorspace, opt_dpx, opt_non_retime, opt_clip)
+            smooth_retime = self.ui.smooth_check.isChecked()
+            publish.Publish(master_input, colorspace, opt_dpx, opt_non_retime, opt_clip, smooth_retime )
 
     def _collect(self):
 
