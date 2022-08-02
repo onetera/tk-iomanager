@@ -701,7 +701,7 @@ class Publish:
             if not self.scan_colorspace.find("legacy") == -1:
                 cmd = ['rez-env', 'natron', 'legacy_config', '--', 'NatronRenderer', '-t', self.nuke_script]
         else:
-            if not self.scan_colorspace.find("ACES") == -1:
+            if not self.scan_colorspace.find("ACES") == -1 or self.scan_colorspace == 'Output - Rec.709':
                 cmd = ['rez-env', 'nuke-11', 'ocio_config', '--', 'nuke', '-ix', self.nuke_script]
             if not self.scan_colorspace.find("Alexa") == -1:
                 cmd = ['rez-env', 'nuke-11', 'alexa_config', '--', 'nuke', '-ix', self.nuke_script]
