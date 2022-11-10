@@ -429,7 +429,7 @@ def _get_resolution(seq):
         if width == 0:
             from subprocess import check_output
             dpx_info = check_output(["rez-env", "oiio","--","iinfo",dpx_file])
-            resolution_info = re.search("\d+\ x\ \d+",dpx_info)
+            resolution_info = re.search("\d+\ x\s+\d+",dpx_info)
             if resolution_info :
                 width,height = resolution_info.group().split("x")
                 width = int(width)
