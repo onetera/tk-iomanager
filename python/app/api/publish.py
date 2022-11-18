@@ -26,7 +26,7 @@ colorspace_set = {
     "ACES - ACES2065-1": "Output - Rec.709",
     "AlexaV3LogC": "AlexaViewer",
     "legacy": "LegacyViewer",
-    "Sony": "SonyViewer",
+    "Sony.rec709": "SonyViewer",
     "Cineon": "rec709",
     "rec709": "rec709",
     "Output - Rec.709": "Output - Rec.709",
@@ -361,9 +361,7 @@ class Publish:
             if not self.scan_colorspace.find("Alexa") == -1:
                 cmd = ['rez-env', 'nuke-12', 'alexa_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("legacy") == -1:
-                cmd = ['rez-env', 'nuke-12', 'legacy_config', '--', 'nuke', '-ix', self.nuke_retime_script]
-            if not self.scan_colorspace.find("Sony") == -1:
-                cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_retime_script]
+                cmd = ['rez-env', 'nuke-12', 'legacy_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if self._opt_dpx == True:
                 if self.seq_type != 'lib' and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
                     cmd = ["echo", "'pass'"]
@@ -371,6 +369,8 @@ class Publish:
                     cmd = ["echo", "'pass'"]
             if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
                 cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
+            if not self.scan_colorspace.find("Sony") == -1:
+                cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
 
 #            print('\n')
 #            print( cmd )
@@ -392,7 +392,7 @@ class Publish:
             self.copy_clip_lib_task = author.Task(title="copy to clip lib")
             if not os.path.exists(self.clip_lib_seq_path):
                 cur_umask = os.umask(0)
-                os.makedirs(self.clip_lib_seq_path, 0777)
+                os.makedirs(self.clip_lib_seq_path, 0o777)
                 os.umask(cur_umask)
 
             if self.master_input.ext in ['mov',"mxf"]:
@@ -1002,7 +1002,7 @@ class Publish:
                                                in_color, out_color, width, mov_path)
         if not os.path.exists(os.path.dirname(tmp_org_jpg_file)):
             cur_umask = os.umask(0)
-            os.makedirs(os.path.dirname(tmp_org_jpg_file), 0777)
+            os.makedirs(os.path.dirname(tmp_org_jpg_file), 0o777)
             os.umask(cur_umask)
         with open(tmp_org_jpg_file, 'w') as f:
             f.write(nk)
@@ -1096,7 +1096,7 @@ class Publish:
 
         if not os.path.exists(os.path.dirname(tmp_nuke_script_file)):
             cur_umask = os.umask(0)
-            os.makedirs(os.path.dirname(tmp_nuke_script_file), 0777)
+            os.makedirs(os.path.dirname(tmp_nuke_script_file), 0o777)
             os.umask(cur_umask)
 
         with open(tmp_nuke_script_file, 'w') as f:
@@ -1153,7 +1153,7 @@ class Publish:
         if not os.path.exists( mov_path ):
             os.system( 'touch ' + mov_path )
 
-        if self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h":
+        if (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace != 'Sony.rec709':
             self.use_natron = True
 
             nk = 'import os\n'
@@ -1261,7 +1261,7 @@ class Publish:
 
         if not os.path.exists(os.path.dirname(tmp_nuke_script_file)):
             cur_umask = os.umask(0)
-            os.makedirs(os.path.dirname(tmp_nuke_script_file), 0777)
+            os.makedirs(os.path.dirname(tmp_nuke_script_file), 0o777)
             os.umask(cur_umask)
 
         with open(tmp_nuke_script_file, 'w') as f:
@@ -1551,7 +1551,7 @@ class Publish:
 
             if not os.path.exists(os.path.dirname(tmp_dpx_to_jpg_file)):
                 cur_umask = os.umask(0)
-                os.makedirs(os.path.dirname(tmp_dpx_to_jpg_file), 0777)
+                os.makedirs(os.path.dirname(tmp_dpx_to_jpg_file), 0o777)
                 os.umask(cur_umask)
 
             with open(tmp_dpx_to_jpg_file, 'w') as f:
@@ -1561,7 +1561,7 @@ class Publish:
 
         if not os.path.exists(os.path.dirname(tmp_nuke_script_file)):
             cur_umask = os.umask(0)
-            os.makedirs(os.path.dirname(tmp_nuke_script_file), 0777)
+            os.makedirs(os.path.dirname(tmp_nuke_script_file), 0o777)
             os.umask(cur_umask)
 
         with open(tmp_nuke_script_file, 'w') as f:
@@ -1652,7 +1652,7 @@ class Publish:
 
         if not os.path.exists(os.path.dirname(tmp_sg_script_file)):
             cur_umask = os.umask(0)
-            os.makedirs(os.path.dirname(tmp_sg_script_file), 0777)
+            os.makedirs(os.path.dirname(tmp_sg_script_file), 0o777)
             os.umask(cur_umask)
 
         print "#### succeeded sg file save ####"

@@ -41,5 +41,5 @@ COLORSPACE=[
     "Cineon",
     "AlexaV3LogC",
     "legacy",
-    "Sony"
+    "Sony.rec709"
 ]
