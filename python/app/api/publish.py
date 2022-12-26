@@ -188,6 +188,7 @@ class Publish:
 
         self.jpg4mov_alexaV3logC_py = ''
         self.jpg4mov_output = ''
+        self.tmp_dpx_to_jpg_file = ''
 
         self._app = sgtk.platform.current_bundle()
         self._sg = self._app.shotgun
@@ -266,7 +267,7 @@ class Publish:
     def get_tag_name(self, tag_name):
         tag_name = tag_name.decode('utf-8')
         if tag_name == '':
-            print "###  Error! YOU SHOULD INPUT TAG!  ###"
+            print( "###  Error! YOU SHOULD INPUT TAG!  ###" )
             return None
         if ',' in tag_name:
             tags = tag_name.split(',')
@@ -292,7 +293,7 @@ class Publish:
     def create_shot(self, switch=False):
         if switch == False and self._opt_clip == False:
             self.shot_ent = self._sg_cmd.create_shot(self.shot_name)
-            print self.shot_ent
+            print(self.shot_ent)
         else:
             tags = self._sg_cmd.get_tags(self._tag_name)
             self.shot_ent = self._sg_cmd.create_shot(self.shot_name)
@@ -304,7 +305,7 @@ class Publish:
             else:
                 desc = {'tags': tags}
                 self._sg.update('Shot', self.shot_ent['id'], desc)
-            print self.shot_ent
+            print(self.shot_ent)
 
 
     def update_shot_info(self):
@@ -528,7 +529,7 @@ class Publish:
                                                             self.plate_file_name + "."
                                                             + str(1000 + index + 1) + "."
                                                             + file_ext))
-            print index
+            print(index)
         with open(tmp_copy_script_file, 'w') as f:
             f.write(cp)
 
@@ -579,7 +580,7 @@ class Publish:
             with open(cp_script_path, 'w') as file:
                 file.write(cp_cmd)
             file.close()
-            print cp_script_path
+            print(cp_script_path)
             commands = ["python", cp_script_path]
             command = author.Command(argv=commands)
             self.copy_task.addCommand(command)
@@ -665,13 +666,13 @@ class Publish:
         if self._sg.find_one("Version", key):
             self.version_ent = self._sg.find_one("Version", key)
             self._sg.update("Version", self.version_ent['id'], desc)
-            print "found the existed version with switch false"
+            print( "found the existed version with switch false" )
             if switch == True and self._opt_non_retime == True:
                 self. version_tmp_ent = self._sg.find_one("Version", key)
                 self._sg.update("Version", self.version_tmp_ent['id'], desc)
-                print "found the existed version with switch true"
+                print( "found the existed version with switch true" )
             if self._opt_non_retime == True and switch == False:
-                print "found the existed version with switch false and nonretime true"
+                print( "found the existed version with switch false and nonretime true" )
                 return self.create_version(switch=True)
             if self.seq_type == "lib" and switch == True:
                 self._clip_ver_ent = self.version_ent
@@ -681,12 +682,12 @@ class Publish:
         else:
             if switch == False or self.seq_type == "lib":
                 self.version_ent = self._sg.create("Version", desc)
-                print "created a new version with switch false"
+                print( "created a new version with switch false" )
             if switch == True and self._opt_non_retime == True:
                 self.version_tmp_ent = self._sg.create('Version', desc)
-                print "created a new version with switch false"
+                print( "created a new version with switch false" )
             if self._opt_non_retime == True and switch == False:
-                print "created a new version with switch false and nonretime true"
+                print( "created a new version with switch false and nonretime true" )
                 return self.create_version(switch=True)
             if self.seq_type == "lib" and switch == True:
                 self._clip_ver_ent = self.version_ent
@@ -974,6 +975,11 @@ class Publish:
             cmd = ['rm', '-rf', os.path.dirname( self.jpg4mov_output ) ]
             command = author.Command(argv=cmd)
             self.rm_task.addCommand(command)
+
+        if self.tmp_dpx_to_jpg_file: 
+            cmd = ['rm', '-rf', os.path.dirname( self.tmp_dpx_to_jpg_file ) ]
+            command = author.Command(argv=cmd)
+            self.rm_task.addCommand(command)
         
         # cmd = ['rm','-f',self.copy_script]
         # command = author.Command(argv=cmd)
@@ -1007,7 +1013,7 @@ class Publish:
         with open(tmp_org_jpg_file, 'w') as f:
             f.write(nk)
 
-        print tmp_org_jpg_file
+        print( tmp_org_jpg_file )
         return tmp_org_jpg_file
 
     def create_nuke_retime_script(self):
@@ -1041,7 +1047,7 @@ class Publish:
         nk += 'nuke.knob("root.first_frame", "{}" )\n'.format(int(self.master_input.start_frame))
         nk += 'nuke.knob("root.last_frame", "{}" )\n'.format(int(self.master_input.end_frame))
         for info in self.master_input.retime_info:
-            print info['retime_start_frame']
+            print( info['retime_start_frame'] )
             nk += '\n'
             nk += '\n'
             nk += 'read = nuke.nodes.Read( file="{}" )\n'.format(scan_path)
@@ -1177,7 +1183,7 @@ class Publish:
                 with open( self.jpg4mov_alexaV3logC_py, 'w' ) as f:
                     f.write( jpg4mov_nk )
                 nk += 'os.system( "rez-env nuke-12 alexa_config -- nuke -ix {}" )\n'.format( self.jpg4mov_alexaV3logC_py )
-                nk += 'os.remove( "{}" )\n'.format( self.jpg4mov_alexaV3logC_py )
+                # nk += 'os.remove( "{}" )\n'.format( self.jpg4mov_alexaV3logC_py )
                 nk += 'read = app.createReader("{}")\n'.format( self.jpg4mov_output )
                 nk += 'read.getParam("ocioInputSpace").setValue("rec709")\n'
                 nk += 'read.getParam("ocioOutputSpace").setValue("linear")\n'
@@ -1437,7 +1443,7 @@ class Publish:
             start_frame = int(self.master_input.just_in)
             end_frame = int(self.master_input.just_out)
             if self.seq_type != 'lib':
-                tmp_dpx_to_jpg_file = os.path.join(self._app.sgtk.project_path, 'seq',
+                self.tmp_dpx_to_jpg_file = os.path.join(self._app.sgtk.project_path, 'seq',
                                                    self.seq_name,
                                                    self.shot_name, "plate",
                                                    self.plate_file_name + "_jpg.py")
@@ -1446,7 +1452,7 @@ class Publish:
                 dpx_path = os.path.join(self.plate_path, self.plate_file_name + ".%04d.dpx")
                 read_path = os.path.join(self.master_input.scan_path,self.master_input.scan_name)
             else:
-                tmp_dpx_to_jpg_file = os.path.join(self.clip_lib_seq_path, self.clip_lib_name + '_jpg.py')
+                self.tmp_dpx_to_jpg_file = os.path.join(self.clip_lib_seq_path, self.clip_lib_name + '_jpg.py')
                 pad = len(str(end_frame))
                 clip_name = '.'.join([self.clip_lib_name, "%04d", "dpx"])
                 dpx_path = os.path.join(self.clip_lib_seq_path, clip_name)
@@ -1490,7 +1496,7 @@ class Publish:
             if not self.scan_colorspace.find( 'Output' ) == -1:
                 color_config = 'ocio_config'
 
-            nk += 'os.system("rez-env nuke-12 {} -- nuke -ix {}")\n'.format(color_config, tmp_dpx_to_jpg_file)
+            nk += 'os.system("rez-env nuke-12 {} -- nuke -ix {}")\n'.format(color_config, self.tmp_dpx_to_jpg_file)
             # if int(width) > 2048:
             #     nk += 'jpg_2k_dir = os.path.dirname("{}")\n'.format(jpg_2k_path)
             #     nk += 'jpg_2k_list = sorted(os.listdir(jpg_2k_dir))\n'
@@ -1499,7 +1505,6 @@ class Publish:
             #     nk += '    os.rename(jpg_2k_dir+"/"+target, jpg_2k_dir+"/{}.%d.jpg"%cnt)\n'.format(self.plate_file_name)
             #     nk += '    cnt += 1\n'
             #     jpg_path = jpg_2k_path
-            nk += 'os.remove("{}")\n'.format(tmp_dpx_to_jpg_file)
             nk += 'dpx_output_dir = os.path.dirname("{}")\n'.format(dpx_path)
             nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
             if self.seq_type != 'lib':
@@ -1549,15 +1554,15 @@ class Publish:
                 nk += '    cnt2 += 1\n'
             nk += 'exit()\n'
 
-            if not os.path.exists(os.path.dirname(tmp_dpx_to_jpg_file)):
+            if not os.path.exists(os.path.dirname(self.tmp_dpx_to_jpg_file)):
                 cur_umask = os.umask(0)
-                os.makedirs(os.path.dirname(tmp_dpx_to_jpg_file), 0o777)
+                os.makedirs(os.path.dirname(self.tmp_dpx_to_jpg_file), 0o777)
                 os.umask(cur_umask)
 
-            with open(tmp_dpx_to_jpg_file, 'w') as f:
+            with open(self.tmp_dpx_to_jpg_file, 'w') as f:
                 f.write(img_nk)
 
-            print tmp_dpx_to_jpg_file
+            print('self.tmp_dpx_to_jpg_file')
 
         if not os.path.exists(os.path.dirname(tmp_nuke_script_file)):
             cur_umask = os.umask(0)
@@ -1567,7 +1572,7 @@ class Publish:
         with open(tmp_nuke_script_file, 'w') as f:
             f.write(nk)
 
-        print tmp_nuke_script_file
+        print( tmp_nuke_script_file )
         return tmp_nuke_script_file
 
     def create_sg_script(self, switch=False):
@@ -1641,7 +1646,7 @@ class Publish:
                 nk += 'sg.upload( "Version", %s, "%s", "sg_uploaded_movie_webm" )\n' % (clip_version_ent['id'], webm_path)
         else:
             if hasattr(self, 'published_tmp_ent') is False or hasattr(self, 'version_tmp_ent') is False:
-                print "#### debug start ####"
+                print( "#### debug start ####" )
             else:
                 nk += 'sg.upload_thumbnail( "PublishedFile", %s, "%s")\n' % (self.published_tmp_ent['id'], jpg_path02)
                 nk += 'sg.upload_thumbnail( "Version", %s, "%s")\n' % (self.version_tmp_ent['id'], jpg_path02)
@@ -1655,10 +1660,10 @@ class Publish:
             os.makedirs(os.path.dirname(tmp_sg_script_file), 0o777)
             os.umask(cur_umask)
 
-        print "#### succeeded sg file save ####"
+        print( "#### succeeded sg file save ####" )
         with open(tmp_sg_script_file, 'w') as f:
             f.write(nk)
-        print tmp_sg_script_file
+        print( tmp_sg_script_file )
         return tmp_sg_script_file
 
     @property
@@ -1721,7 +1726,7 @@ class Publish:
                 copy_file = file_format % i
                 file_list.append(copy_file)
         else:
-            print "**  Here are Not Any Sequence! Check Your Sequence!  **"
+            print( "**  Here are Not Any Sequence! Check Your Sequence!  **" )
 
         return file_list
 
@@ -1740,7 +1745,7 @@ class Publish:
             ['name', 'is', self.version_file_name]
         ]
         published_ents = self._sg.find("PublishedFile", key, ['version_number'])
-        print published_ents
+        print( published_ents )
         if not published_ents:
             self.version = 1
         else:
