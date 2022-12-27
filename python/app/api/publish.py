@@ -976,10 +976,10 @@ class Publish:
             command = author.Command(argv=cmd)
             self.rm_task.addCommand(command)
 
-        # if self.tmp_dpx_to_jpg_file and self.seq_type == 'lib': 
-        #     cmd = ['rm', '-rf', os.path.dirname( self.tmp_dpx_to_jpg_file ) ]
-        #     command = author.Command(argv=cmd)
-        #     self.rm_task.addCommand(command)
+        if self.tmp_dpx_to_jpg_file: 
+            cmd = ['rm', '-rf', self.tmp_dpx_to_jpg_file ]
+            command = author.Command(argv=cmd)
+            self.rm_task.addCommand(command)
         
         # cmd = ['rm','-f',self.copy_script]
         # command = author.Command(argv=cmd)
