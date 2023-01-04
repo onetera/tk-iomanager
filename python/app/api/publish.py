@@ -204,7 +204,10 @@ class Publish:
 
         self.setting = Output(output_info)
         self._sg_cmd = ShotgunCommands(self._app, self._sg, self.project, self.clip_project, self.user, self._context)
-        self._opt_dpx = opt_dpx
+        if self.seq_type == "editor":
+            self._opt_dpx = False
+        else:
+            self._opt_dpx = opt_dpx
         self._opt_non_retime = opt_non_retime
         self._opt_clip = opt_clip
         self._smooth_retime = smooth_retime
@@ -363,6 +366,8 @@ class Publish:
                 cmd = ['rez-env', 'nuke-12', 'alexa_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("legacy") == -1:
                 cmd = ['rez-env', 'nuke-12', 'legacy_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+            if not self.scan_colorspace.find("Sony") == -1:
+                cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if self._opt_dpx == True:
                 if self.seq_type != 'lib' and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
                     cmd = ["echo", "'pass'"]
@@ -370,8 +375,6 @@ class Publish:
                     cmd = ["echo", "'pass'"]
             if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
                 cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
-            if not self.scan_colorspace.find("Sony") == -1:
-                cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
 
 #            print('\n')
 #            print( cmd )
