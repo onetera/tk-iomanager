@@ -373,7 +373,7 @@ class Publish:
                     cmd = ["echo", "'pass'"]
                 if self.seq_type == 'lib':
                     cmd = ["echo", "'pass'"]
-            if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
+            if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace != 'Sony.rec709' :
                 cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
 
 #            print('\n')
