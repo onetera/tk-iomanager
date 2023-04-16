@@ -724,7 +724,7 @@ class Publish:
             if not self.scan_colorspace.find("Sony") == -1:
                 cmd = ['rez-env', 'natron', 'sony_config', '--', 'NatronRenderer', '-t', self.nuke_script]
             if not self.scan_colorspace.find("Arri") == -1:
-                cmd = ['rez-env', 'natron', 'Arri4_config', '--', 'NatronRenderer', '-t', self.nuke_script]
+                cmd = ['rez-env', 'natron', 'alexa4_config', '--', 'NatronRenderer', '-t', self.nuke_script]
         else:
             if not self.scan_colorspace.find("ACES") == -1 or self.scan_colorspace == 'Output - Rec.709':
                 cmd = ['rez-env', 'nuke-12', 'ocio_config', '--', 'nuke', '-ix', self.nuke_script]
@@ -735,7 +735,7 @@ class Publish:
             if not self.scan_colorspace.find("Sony") == -1:
                 cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_script]
             if not self.scan_colorspace.find("Arri") == -1:
-                cmd = ['rez-env', 'nuke-12', 'Arri4_config', '--', 'nuke', '-ix', self.nuke_script]
+                cmd = ['rez-env', 'nuke-12', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_script]
         if self.master_input.ext in ["mov","mxf"] and self._opt_dpx == False:
             cmd = ["echo", "'pass'"]
 
