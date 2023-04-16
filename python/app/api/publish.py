@@ -31,7 +31,7 @@ colorspace_set = {
     "rec709": "rec709",
     "Output - Rec.709": "Output - Rec.709",
     "Gamma2.4": "Gamma2.4",
-    "Arri4.rec709": "Arri4Viewer",
+    "Arri4.rec709": "Arri4Viewer"
 }
 
 
