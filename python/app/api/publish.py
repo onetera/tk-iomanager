@@ -30,7 +30,8 @@ colorspace_set = {
     "Cineon": "rec709",
     "rec709": "rec709",
     "Output - Rec.709": "Output - Rec.709",
-    "Gamma2.4": "Gamma2.4"
+    "Gamma2.4": "Gamma2.4",
+    "Arri4.rec709": "Arri4Viewer",
 }
 
 
@@ -351,6 +352,8 @@ class Publish:
                 cmd = ['rez-env', 'nuke-12', 'legacy_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             if not self.scan_colorspace.find("Sony") == -1:
                 cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_retime_script]
+            if not self.scan_colorspace.find("Arri") == -1:
+                cmd = ['rez-env', 'nuke-12', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
             self.jpg_task.addChild(self.org_task)
@@ -368,12 +371,16 @@ class Publish:
                 cmd = ['rez-env', 'nuke-12', 'legacy_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("Sony") == -1:
                 cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+            if not self.scan_colorspace.find("Arri") == -1:
+                cmd = ['rez-env', 'nuke-12', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if self._opt_dpx == True:
                 if self.seq_type != 'lib' and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
                     cmd = ["echo", "'pass'"]
                 if self.seq_type == 'lib':
                     cmd = ["echo", "'pass'"]
             if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace != 'Sony.rec709' :
+                cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
+            if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace != 'Arri4.rec709' :
                 cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
 
 #            print('\n')
@@ -459,6 +466,8 @@ class Publish:
             cmd = ['rez-env', 'nuke-12', 'legacy_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
         if not self.scan_colorspace.find("Sony") == -1:
             cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
+        if not self.scan_colorspace.find("Arri") == -1:
+            cmd = ['rez-env', 'nuke-12', 'alexa4_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
 
         command = author.Command(argv=cmd)
         self.copy_jpg_task.addCommand(command)
@@ -714,6 +723,8 @@ class Publish:
                 cmd = ['rez-env', 'natron', 'legacy_config', '--', 'NatronRenderer', '-t', self.nuke_script]
             if not self.scan_colorspace.find("Sony") == -1:
                 cmd = ['rez-env', 'natron', 'sony_config', '--', 'NatronRenderer', '-t', self.nuke_script]
+            if not self.scan_colorspace.find("Arri") == -1:
+                cmd = ['rez-env', 'natron', 'Arri4_config', '--', 'NatronRenderer', '-t', self.nuke_script]
         else:
             if not self.scan_colorspace.find("ACES") == -1 or self.scan_colorspace == 'Output - Rec.709':
                 cmd = ['rez-env', 'nuke-12', 'ocio_config', '--', 'nuke', '-ix', self.nuke_script]
@@ -723,6 +734,8 @@ class Publish:
                 cmd = ['rez-env', 'nuke-12', 'legacy_config', '--', 'nuke', '-ix', self.nuke_script]
             if not self.scan_colorspace.find("Sony") == -1:
                 cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_script]
+            if not self.scan_colorspace.find("Arri") == -1:
+                cmd = ['rez-env', 'nuke-12', 'Arri4_config', '--', 'nuke', '-ix', self.nuke_script]
         if self.master_input.ext in ["mov","mxf"] and self._opt_dpx == False:
             cmd = ["echo", "'pass'"]
 
@@ -1164,6 +1177,8 @@ class Publish:
 
         if (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace != 'Sony.rec709':
             self.use_natron = True
+        if (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace != 'Arri4.rec709':
+            self.use_natron = True
 
             nk = 'import os\n'
             nk += 'from NatronEngine import *\n'
@@ -1496,6 +1511,8 @@ class Publish:
                 color_config = 'legacy_config'
             if not self.scan_colorspace.find("Sony") == -1:
                 color_config = 'sony_config'
+            if not self.scan_colorspace.find("Arri") == -1:
+                color_config = 'alexa4_config'
             if not self.scan_colorspace.find( 'Output' ) == -1:
                 color_config = 'ocio_config'
 
