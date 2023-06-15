@@ -1151,6 +1151,7 @@ class Publish:
 
 
     def create_mov_nuke_script(self):
+        print("create_mov_nuke_script")
         if self._opt_non_retime == True and os.path.exists(self.plate_path):
             return None
 
@@ -1213,8 +1214,12 @@ class Publish:
 
             else:
                 nk += 'read = app.createReader("{}")\n'.format(scan_path)
-                nk += 'read.getParam("ocioInputSpace").setValue("color_picking")\n'
-                nk += 'read.getParam("ocioOutputSpaceIndex").setValue(1)\n'
+                if self.scan_colorspace == 'Arri4.rec709':
+                    nk += 'read.getParam("ocioInputSpace").setValue("Arri4.rec709")\n'
+                    nk += 'read.getParam("ocioOutputSpaceIndex").setValue(1)\n'
+                else:
+                    nk += 'read.getParam("ocioInputSpace").setValue("color_picking")\n'
+                    nk += 'read.getParam("ocioOutputSpaceIndex").setValue(1)\n'
             nk += 'read.getParam("firstFrame").setValue({})\n'.format(int(self.master_input.just_in))
             nk += 'read.getParam("lastFrame").setValue({})\n'.format(int(self.master_input.just_out))
 
@@ -1232,6 +1237,9 @@ class Publish:
             if self.scan_colorspace == 'AlexaV3LogC':
                 nk += 'write.getParam("ocioInputSpace").setValue("linear")\n'
                 nk += 'write.getParam("ocioOutputSpace").setValue("rec709" )\n'
+            elif self.scan_colorspace == 'Arri4.rec709':
+                nk += 'write.getParam("ocioInputSpace").setValue("Arri4.rec709")\n'
+                nk += 'write.getParam("ocioOutputSpace").setValue("Arr4Viewer")\n'  
             else:
                 nk += 'write.getParam("ocioInputSpace").setValue("color_picking")\n'
                 nk += 'write.getParam("ocioOutputSpaceIndex").setValue(1)\n'
