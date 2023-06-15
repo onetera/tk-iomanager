@@ -338,6 +338,9 @@ class Publish:
         self._sg.update("Shot", self.shot_ent['id'], desc)
 
     def create_org_job(self):
+        print("="*100)
+        print(self.setting.mov_codec)
+        print("="*100)
         if self._opt_non_retime == True and os.path.exists(self.plate_path):
             return None
 
@@ -380,6 +383,8 @@ class Publish:
                     cmd = ["echo", "'pass'"]
             if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace != 'Sony.rec709' :
                 cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
+            if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace == 'Arri4.rec709' :
+                cmd = ['rez-env', 'natron', 'alexa4_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
             # if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace != 'Arri4.rec709' :
             #     cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
 
