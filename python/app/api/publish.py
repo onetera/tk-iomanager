@@ -248,10 +248,12 @@ class Publish:
         self.create_temp_job()
         if self.seq_type == 'lib':
             self.create_rm_job(switch=True)
+
             self.convert_gif_job()
-            # self.convert_mp4_job(switch=True)
-            #self.create_jpg_job(switch=True)
-            #self.create_clip_lib_job()
+            self.convert_mp4_job(switch=True)
+            self.create_jpg_job(switch=True)
+
+            self.create_clip_lib_job()
         if self.seq_type != 'lib':
             self.create_rm_job()
         self.create_sg_job()
@@ -338,9 +340,6 @@ class Publish:
         self._sg.update("Shot", self.shot_ent['id'], desc)
 
     def create_org_job(self):
-        print("="*100)
-        print(self.setting.mov_codec)
-        print("="*100)
         if self._opt_non_retime == True and os.path.exists(self.plate_path):
             return None
 
@@ -1216,7 +1215,8 @@ class Publish:
                 nk += 'read = app.createReader("{}")\n'.format(scan_path)
                 if self.scan_colorspace == 'Arri4.rec709':
                     nk += 'read.getParam("ocioInputSpace").setValue("Arri4.rec709")\n'
-                    nk += 'read.getParam("ocioOutputSpaceIndex").setValue(1)\n'
+                    nk += 'read.getParam("ocioOutputSpace").setValue("Arri4.rec709")\n'
+                    # nk += 'read.getParam("ocioOutputSpaceIndex").setValue(1)\n'
                 else:
                     nk += 'read.getParam("ocioInputSpace").setValue("color_picking")\n'
                     nk += 'read.getParam("ocioOutputSpaceIndex").setValue(1)\n'
@@ -1239,7 +1239,7 @@ class Publish:
                 nk += 'write.getParam("ocioOutputSpace").setValue("rec709" )\n'
             elif self.scan_colorspace == 'Arri4.rec709':
                 nk += 'write.getParam("ocioInputSpace").setValue("Arri4.rec709")\n'
-                nk += 'write.getParam("ocioOutputSpace").setValue("Arr4Viewer")\n'  
+                nk += 'write.getParam("ocioOutputSpace").setValue("Arri4Viewer")\n'  
             else:
                 nk += 'write.getParam("ocioInputSpace").setValue("color_picking")\n'
                 nk += 'write.getParam("ocioOutputSpaceIndex").setValue(1)\n'
