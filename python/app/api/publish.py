@@ -671,7 +671,7 @@ class Publish:
                 "sg_uploaded_movie_frame_rate": float(self.master_input.framerate)
                }
 
-        if self.seq_type == "editor":
+        if self.seq_type == "editor" or self.seq_type == "src":
             ## duration 값만 올라 가는 방식에서 just_out - just_in + 1 방식으로 변경
             #desc["sg_cut_duration"] = int(self.master_input.duration)
             desc['sg_cut_duration'] = int( self.master_input.just_out ) - int( self.master_input.just_in ) + 1 
