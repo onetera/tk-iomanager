@@ -668,13 +668,15 @@ class Publish:
                 "sg_first_frame": 1,
                 "sg_version_type": version_type,
                 "sg_scan_colorspace": self.scan_colorspace,
-                "sg_uploaded_movie_frame_rate": float(self.master_input.framerate)
+                "sg_uploaded_movie_frame_rate": float(self.master_input.framerate),
+                "sg_cut_duration" :  int( self.master_input.just_out ) - int( self.master_input.just_in ) + 1 
                }
 
-        if self.seq_type == "editor" or self.seq_type == "src":
+        #tk-download에서 sg_cut_duration정보 필요로 인해 src, editor, org 모두 sg_cut_duration을 등록하는 방식으로 변경
+        # if self.seq_type == "editor" or self.seq_type == "src":
             ## duration 값만 올라 가는 방식에서 just_out - just_in + 1 방식으로 변경
             #desc["sg_cut_duration"] = int(self.master_input.duration)
-            desc['sg_cut_duration'] = int( self.master_input.just_out ) - int( self.master_input.just_in ) + 1 
+            # desc['sg_cut_duration'] = int( self.master_input.just_out ) - int( self.master_input.just_in ) + 1 
 
 
 
