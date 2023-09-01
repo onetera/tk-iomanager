@@ -168,9 +168,9 @@ def _create_thumbnail_for_mov(movs):
         select_frames = list(set(select_frames))
         select_frames.sort()
         select_frames = ["eq(n\,{})".format(frame) for frame in select_frames]
-        print len(select_frames)
-        print len(select_frames)
-        print len(select_frames)
+        print(len(select_frames))
+        print(len(select_frames))
+        print(len(select_frames))
         select_command ="+".join(select_frames)
         
         command = ['rez-env',"ffmpeg","--","ffmpeg","-y"]
@@ -187,14 +187,14 @@ def _create_thumbnail_for_mov(movs):
         command.append(thumbnail_file)
 
         command = " ".join(command)
-        print command
+        print(command)
         os.system(command)
 
 def _create_seq_array(sequences):
         
     array = []
     for seq in sequences:
-        print "create dir seq info {}".format(seq.start())
+        print("create dir seq info {}".format(seq.start()))
         info = []
         info.insert(MODEL_KEYS['check'], QtGui.QCheckBox())
         info.insert(MODEL_KEYS['thumbnail'],_get_thumbnail(seq,sequences))
@@ -282,7 +282,8 @@ def _get_thumbnail(seq,sequences):
         
         thumbnail_path = os.path.join(os.path.dirname(seq.dirname),".thumbnail")
         thumbnail_file = os.path.join(thumbnail_path,
-                                     seq.head()+seq.format("%p")%seq.start()+".jpg")
+                                     os.path.basename(seq.dirname)+'_'+seq.head()+seq.format("%p")%seq.start()+".jpg")
+        print(thumbnail_file)
         if not os.path.exists(thumbnail_path):
             os.makedirs(thumbnail_path)
 
@@ -499,7 +500,7 @@ def _get_movs(path):
         mov_info = MOV_INFO(mov_file,video_stream)
         mov_name = mov_file.split(".")[0]
         edl_files = glob.glob(mov_name + "*.edl")
-        print edl_files
+        print(edl_files)
         if edl_files:
             for edl_file in edl_files:
                 if os.path.exists(edl_file):
@@ -543,15 +544,15 @@ class ExcelWriteModel:
     
     def _get_excel_file(self):
 
-	    excel_files = ""
-	    excel_files = glob.glob("%s/scanlist_*.xls"%self._excel_path)
-	    if not excel_files:
-		    self._excel_file  = "%s/scanlist_01.xls"%self._excel_path
-	    else:
-		    last = sorted(excel_files)[-1]
-		    num = filter(str.isdigit,str(os.path.basename(last)))
-		    new_name = "scanlist_%02d.xls"%(int(num)+1)
-		    self._excel_file = "%s/%s"%(self._excel_path,new_name)
+        excel_files = ""
+        excel_files = glob.glob("%s/scanlist_*.xls"%self._excel_path)
+        if not excel_files:
+            self._excel_file  = "%s/scanlist_01.xls"%self._excel_path
+        else:
+            last = sorted(excel_files)[-1]
+            num = filter(str.isdigit,str(os.path.basename(last)))
+            new_name = "scanlist_%02d.xls"%(int(num)+1)
+            self._excel_file = "%s/%s"%(self._excel_path,new_name)
 
     @classmethod    
     def get_last_excel_file(self,path):
@@ -636,7 +637,7 @@ class ExcelWriteModel:
                         self.wWorksheet.insert_image( row+1, col,data,{'x_scale':0.25, 'y_scale': 0.25})
 
                 except Exception as e :
-                    print e
+                    print(e)
                     pass
         
         for col in MODEL_KEYS.values()[1:]:
