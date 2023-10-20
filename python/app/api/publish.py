@@ -18,7 +18,9 @@ codecs = {
     "Apple ProRes 422 LT": "apcs",
     "Apple ProRes 422 Proxy": "apco",
     "Avid DNxHD 444": "AVdn",
-    "Avid DNxHD 422": "AVdn"}
+    "Avid DNxHD 422": "AVdn",
+    "Avid DnxHR 422": "AVdh"
+    }
 
 colorspace_set = {
 
@@ -45,11 +47,15 @@ class Output(object):
         self.mov_codec = codecs[info['sg_mov_codec']]
         if info['sg_mov_codec'] == "Avid DNxHD 444":
             self.dnxhd_profile = 'DNxHD 444 10-bit 440Mbit'
-        
         elif info['sg_mov_codec'] == "Avid DNxHD 422":
             self.dnxhd_profile = 'DNxHD 422 10-bit 220Mbit'
         else:
             self.dnxhd_profile = ''
+        if info['sg_mov_codec'] == "Avid DnxHR 422":
+            self.dnxhr_profile = 'HQX 4:2:2 12-bit'
+        else:
+            self.dnxhr_profile = ''
+
 
     def _set_file_type(self, text):
 
@@ -1280,6 +1286,8 @@ class Publish:
             nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
             if self.setting.dnxhd_profile:
                 nk += 'write["mov64_dnxhd_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhd_profile )
+            if self.setting.dnxhr_profile:
+                nk += 'write["mov64_dnxhr_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhr_profile )
             nk += 'write["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
             nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
             nk += 'nuke.execute(write,{0},{1},1)\n'.format(int(self.master_input.just_in),
@@ -1292,6 +1300,8 @@ class Publish:
             nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
             if self.setting.dnxhd_profile:
                 nk += 'write["mov64_dnxhd_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhd_profile )
+            if self.setting.dnxhr_profile:
+                nk += 'write["mov64_dnxhr_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhr_profile )
             nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
             nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
             nk += 'nuke.execute(write,{0},{1},1)\n'.format(int(self.master_input.just_in),
@@ -1351,6 +1361,8 @@ class Publish:
         nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
         if self.setting.dnxhd_profile:
             nk += 'write["mov64_dnxhd_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhd_profile )
+        if self.setting.dnxhr_profile:
+                nk += 'write["mov64_dnxhr_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhr_profile )
 
         nk += 'write["colorspace"].setValue("{}")\n'.format(output_color)
         nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
@@ -1464,6 +1476,8 @@ class Publish:
             nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
             if self.setting.dnxhd_profile:
                 nk += 'write["mov64_dnxhd_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhd_profile )
+            if self.setting.dnxhr_profile:
+                nk += 'write["mov64_dnxhr_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhr_profile )
                 
             nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
             nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
