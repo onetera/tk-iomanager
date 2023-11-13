@@ -362,6 +362,8 @@ class Publish:
                 cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             if not self.scan_colorspace.find("Arri") == -1:
                 cmd = ['rez-env', 'nuke-12', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_retime_script]
+                if self.project['name'] == "jung" or self.project['name'] == 'RND':
+                    cmd = ['rez-env', 'nuke-12', 'aces_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
             self.jpg_task.addChild(self.org_task)
@@ -381,6 +383,8 @@ class Publish:
                 cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("Arri") == -1:
                 cmd = ['rez-env', 'nuke-12', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+                if self.project['name'] == "jung" or self.project['name'] == 'RND':
+                    cmd = ['rez-env', 'nuke-12', 'aces_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if self._opt_dpx == True:
                 if self.seq_type != 'lib' and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
                     cmd = ["echo", "'pass'"]
@@ -720,6 +724,9 @@ class Publish:
             return None
 
     def create_jpg_job(self, switch=False):
+        print('------------------------------------')
+        print(self.scan_colorspace)
+        print('------------------------------------')
         if self._opt_non_retime == True and os.path.exists(self.plate_path):
             return None
 
@@ -736,7 +743,16 @@ class Publish:
             if not self.scan_colorspace.find("Sony") == -1:
                 cmd = ['rez-env', 'natron', 'sony_config', '--', 'NatronRenderer', '-t', self.nuke_script]
             if not self.scan_colorspace.find("Arri") == -1:
-                cmd = ['rez-env', 'natron', 'alexa4_config', '--', 'NatronRenderer', '-t', self.nuke_script]
+                ### 정년이[jung] 프로젝트에서는 natron을 사용하지 않기로 I/O팀과 결정
+                ##  정년이[jung] 종료 이후에는 복구가능한 코드
+                print('------------------------------------')
+                print(self.project['name'])
+                print('------------------------------------')
+                if self.project['name'] == "jung" or self.project['name'] == 'RND':
+                    cmd = ['rez-env', 'nuke-12', 'aces_config', '--', 'nuke', '-ix', self.nuke_script]
+                else:
+                    cmd = ['rez-env', 'natron', 'alexa4_config', '--', 'NatronRenderer', '-t', self.nuke_script]
+            
         else:
             if not self.scan_colorspace.find("ACES") == -1 or self.scan_colorspace == 'Output - Rec.709':
                 cmd = ['rez-env', 'nuke-12', 'ocio_config', '--', 'nuke', '-ix', self.nuke_script]
@@ -1485,6 +1501,58 @@ class Publish:
             # nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
             nk += 'nuke.execute(write,{},{},1)\n'.format(start_frame, end_frame)
             nk += 'exit()\n'
+
+        ### 정년이[jung] 프로젝트에서는 natron을 사용하지 않기로 I/O팀과 결정
+        ##  정년이[jung] 종료 이후에는 복구가능한 코드 
+        # -> 프로젝트 종료 후에도 aces_config 사용하면 natron 대신 nuke 사용할 수도 있음
+        elif self._opt_dpx == True \
+            and (self.project['name'] == 'jung' or self.project['name'] == 'RND'):
+            img_nk = ''
+            self.use_natron = False
+            start_frame = int(self.master_input.just_in)
+            end_frame = int(self.master_input.just_out)
+            color = self.scan_colorspace
+
+            mov_path = os.path.join(self._app.sgtk.project_path, 'seq',
+                                    self.seq_name,
+                                    self.shot_name, "plate",
+                                    self.plate_file_name + ".mov")
+            print('-'*50)
+            print(mov_path)
+            print('-'*50)
+            read_path = os.path.join( self.master_input.scan_path, self.master_input.scan_name )
+            dpx_path = os.path.join(self.plate_path, self.plate_file_name + ".%04d.dpx")
+            self.tmp_dpx_to_jpg_file = os.path.join(self._app.sgtk.project_path, 'seq',
+                                                   self.seq_name,
+                                                   self.shot_name, "plate",
+                                                   self.plate_file_name + "_jpg.py")
+            self.use_natron = False
+            nk = ''
+            nk += 'import nuke\n'
+            nk += 'nuke.knob("root.first_frame", "{}")\n'.format(start_frame)
+            nk += 'nuke.knob("root.last_frame", "{}")\n'.format(end_frame)
+            # nk += 'read = nuke.nodes.Read(file = "{}")\n'.format(read_path)
+            nk += 'read = nuke.nodes.Read(name="Read1", file="{}")\n'.format(read_path)
+            # nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
+            nk += 'read["colorspace"].setValue("{}")\n'.format( "rec709" )
+            nk += 'read["first"].setValue({})\n'.format(start_frame)
+            nk += 'read["last"].setValue({})\n'.format(end_frame)
+            tg = 'read'
+            nk += 'output = "{}"\n'.format(dpx_path)
+            nk += 'write  = nuke.nodes.Write(name="ww_write", inputs = [read], file=output )\n'
+            nk += 'write["file_type"].setValue( "dpx" )\n'
+            nk += 'write["datatype"].setValue( "12 bit" )'
+            nk += 'write["create_directories"].setValue(True)\n'
+            # nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
+            nk += 'write["colorspace"].setValue("{}")\n'.format( "rec709" )
+            nk += 'nuke.execute(write, {}, {}, 1)\n'.format(start_frame, end_frame)
+            nk += 'exit()\n'
+            color_config = 'aces_config'
+
+            # img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_path, color,
+            #                                            colorspace_set[color], width, mov_path)
+            # with open(self.tmp_dpx_to_jpg_file, 'w') as f:
+            #     f.write(img_nk)
 
         else:
             start_frame = int(self.master_input.just_in)
