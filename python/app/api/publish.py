@@ -1541,7 +1541,7 @@ class Publish:
             nk += 'output = "{}"\n'.format(dpx_path)
             nk += 'write  = nuke.nodes.Write(name="ww_write", inputs = [read], file=output )\n'
             nk += 'write["file_type"].setValue( "dpx" )\n'
-            nk += 'write["datatype"].setValue( "12 bit" )'
+            nk += 'write["datatype"].setValue( "12 bit" )\n'
             nk += 'write["create_directories"].setValue(True)\n'
             # nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
             nk += 'write["colorspace"].setValue("{}")\n'.format( "rec709" )
