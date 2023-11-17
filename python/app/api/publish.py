@@ -1553,6 +1553,12 @@ class Publish:
             
             img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_path, color,
                                                        colorspace_set[color], width, mov_path)
+            
+            if not os.path.exists(os.path.dirname(self.tmp_dpx_to_jpg_file)):
+                cur_umask = os.umask(0)
+                os.makedirs(os.path.dirname(self.tmp_dpx_to_jpg_file), 0o777)
+                os.umask(cur_umask)
+
             with open(self.tmp_dpx_to_jpg_file, 'w') as f:
                 f.write(img_nk)
             color_config = 'aces_config'
