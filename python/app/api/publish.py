@@ -68,6 +68,9 @@ class Output(object):
         if text == "dpx 10bit":
             self.file_type = "dpx"
             self.datatype = "10 bit"
+        if text == "dpx 12bit":
+            self.file_type = "dpx"
+            self.datatype = "12 bit"
 
     def _set_colorspace(self, text, info):
 
@@ -211,6 +214,7 @@ class Publish:
 
         self.setting = Output(output_info)
         self._sg_cmd = ShotgunCommands(self._app, self._sg, self.project, self.clip_project, self.user, self._context)
+        ## 
         if self.seq_type == "editor":
             self._opt_dpx = False
         else:
@@ -1546,15 +1550,18 @@ class Publish:
             # nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
             nk += 'write["colorspace"].setValue("{}")\n'.format( "rec709" )
             nk += 'nuke.execute(write, {}, {}, 1)\n'.format(start_frame, end_frame)
-            nk += 'exit()\n'
+            
+            img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_path, color,
+                                                       colorspace_set[color], width, mov_path)
+            with open(self.tmp_dpx_to_jpg_file, 'w') as f:
+                f.write(img_nk)
             color_config = 'aces_config'
+            nk += 'os.system("rez-env nuke-12 {} -- nuke -ix {}")\n'.format(color_config, self.tmp_dpx_to_jpg_file)
 
-            # img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_path, color,
-            #                                            colorspace_set[color], width, mov_path)
-            # with open(self.tmp_dpx_to_jpg_file, 'w') as f:
-            #     f.write(img_nk)
 
-        else:
+            nk += 'exit()\n'
+
+        else: # self._opt_dpx == True 인 경우
             start_frame = int(self.master_input.just_in)
             end_frame = int(self.master_input.just_out)
             if self.seq_type != 'lib':
