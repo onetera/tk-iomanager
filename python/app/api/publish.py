@@ -1513,8 +1513,13 @@ class Publish:
             and (self.project['name'] == 'jung' or self.project['name'] == 'RND'):
             img_nk = ''
             self.use_natron = False
-            start_frame = int(self.master_input.just_in)
-            end_frame = int(self.master_input.just_out)
+
+            start_frame = 1001
+            end_frame   = 1001 + int( self.master_input.just_out ) - int( self.master_input.just_in )
+
+#            start_frame = int(self.master_input.just_in)
+#            end_frame = int(self.master_input.just_out)
+
             color = self.scan_colorspace
 
             mov_path = os.path.join(self._app.sgtk.project_path, 'seq',
