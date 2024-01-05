@@ -1514,11 +1514,8 @@ class Publish:
             img_nk = ''
             self.use_natron = False
 
-            start_frame = 1001
-            end_frame   = 1001 + int( self.master_input.just_out ) - int( self.master_input.just_in )
-
-#            start_frame = int(self.master_input.just_in)
-#            end_frame = int(self.master_input.just_out)
+            start_frame = int(self.master_input.just_in)
+            end_frame = int(self.master_input.just_out)
 
             color = self.scan_colorspace
 
@@ -1569,6 +1566,18 @@ class Publish:
             color_config = 'aces_config'
             nk += 'os.system("rez-env nuke-12 {} -- nuke -ix {}")\n'.format(color_config, self.tmp_dpx_to_jpg_file)
 
+            nk += 'dpx_output_dir = os.path.dirname("{}")\n'.format(dpx_path)
+            nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
+            nk += 'jpg_output_dir = os.path.dirname("{}")\n'.format(jpg_path)
+            nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
+            nk += 'cnt1 = cnt2 = 1001\n'
+            nk += 'for target in dpx_output_list:\n'
+            nk += '    if ".py" not in target: \n'
+            nk += '        os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.dpx"%cnt1)\n'.format(self.plate_file_name)
+            nk += '        cnt1 += 1\n'
+            nk += 'for target in jpg_output_list:\n'
+            nk += '    os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.jpg"%cnt2)\n'.format(self.plate_file_name)
+            nk += '    cnt2 += 1\n'
 
             nk += 'exit()\n'
 
