@@ -1726,7 +1726,7 @@ class Publish:
                 nk += '        final_name = temp_jpgname.replace(".temp", "")\n'
                 nk += '        os.rename(temp_jpgname, final_name)\n'
                 nk += 'else:\n'
-                nk += '    for target in jpg_ouput_list:\n'
+                nk += '    for target in jpg_output_list:\n'
                 nk += '        os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.jpg"%cnt2)\n'.format(self.plate_file_name)
                 nk += '        cnt2 += 1\n'
             nk += 'cnt1 = cnt2 = 1001\n'
@@ -1751,7 +1751,7 @@ class Publish:
             nk += '            cnt1 += 1\n'            
             if self.seq_type != 'lib':
                 nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
-                nk += 'if len(jgp_output_list) > 1000:'
+                nk += 'if len(jpg_output_list) > 1000:\n'
                 nk += '    temp_jpgname_list = []\n'
                 nk += '    for target in jpg_output_list:\n'
                 nk += '        jpg_temp_file = jpg_output_dir+"/{}.%d.dpx"%cnt2 + ".temp"\n'.format(self.plate_file_name)
@@ -1762,7 +1762,7 @@ class Publish:
                 nk += '        final_name = temp_jpgname.replace(".temp", "")\n'
                 nk += '        os.rename(temp_jpgname, final_name)\n'
                 nk += 'else:\n'
-                nk += '    for target in jpg_ouput_list:\n'
+                nk += '    for target in jpg_output_list:\n'
                 nk += '        os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.jpg"%cnt2)\n'.format(self.plate_file_name)
                 nk += '        cnt2 += 1\n'
             nk += 'exit()\n'
