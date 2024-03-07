@@ -1676,95 +1676,48 @@ class Publish:
             if self.seq_type != 'lib':
                 nk += 'jpg_output_dir = os.path.dirname("{}")\n'.format(jpg_path)
                 nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
-            # if len(str(end_frame)) > 4:
-            #     nk += 'dpx_tmp_list, jpg_tmp_list = [], []\n'
-            #     nk += 'for target in dpx_output_list:\n'
-            #     nk += '    name = target.split(".")\n'
-            #     nk += '    if len(name[1]) != {}:\n'.format(len(str(end_frame)))
-            #     nk += '        res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(end_frame)))
-            #     nk += '        os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/"+res)\n'
-            #     nk += '        dpx_tmp_list.append(res)\n'
-            #     nk += '    else:\n'
-            #     nk += '        dpx_tmp_list.append(target)\n'
-            #     if self.seq_type != 'lib':
-            #         nk += 'for target in jpg_output_list:\n'
-            #         nk += '    name = target.split(".")\n'
-            #         nk += '    if len(name[1]) != {}:\n'.format(len(str(end_frame)))
-            #         nk += '        res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(end_frame)))
-            #         nk += '        os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/"+res)\n'
-            #         nk += '        jpg_tmp_list.append(res)\n'
-            #         nk += '    else:\n'
-            #         nk += '        jpg_tmp_list.append(target)\n'
-            #         nk += 'dpx_output_list = sorted(dpx_tmp_list)\n'
-            #         nk += 'jpg_output_list = sorted(jpg_tmp_list)\n'
+            if len(str(end_frame)) > 4:
+                nk += 'dpx_tmp_list, jpg_tmp_list = [], []\n'
+                nk += 'for target in dpx_output_list:\n'
+                nk += '    name = target.split(".")\n'
+                nk += '    if len(name[1]) != {}:\n'.format(len(str(end_frame)))
+                nk += '        res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(end_frame)))
+                nk += '        os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/"+res)\n'
+                nk += '        dpx_tmp_list.append(res)\n'
+                nk += '    else:\n'
+                nk += '        dpx_tmp_list.append(target)\n'
+                if self.seq_type != 'lib':
+                    nk += 'for target in jpg_output_list:\n'
+                    nk += '    name = target.split(".")\n'
+                    nk += '    if len(name[1]) != {}:\n'.format(len(str(end_frame)))
+                    nk += '        res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(end_frame)))
+                    nk += '        os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/"+res)\n'
+                    nk += '        jpg_tmp_list.append(res)\n'
+                    nk += '    else:\n'
+                    nk += '        jpg_tmp_list.append(target)\n'
+                    nk += 'dpx_output_list = sorted(dpx_tmp_list)\n'
+                    nk += 'jpg_output_list = sorted(jpg_tmp_list)\n'
             nk += 'cnt1 = cnt2 = 1001\n'
-            nk += 'if len(dpx_output_list) > 1000:\n'
-            nk += '    temp_dpxname_list = []\n'
-            nk += '    for target in dpx_output_list:\n'
-            nk += '        if ".py" not in target: \n'
-            nk += '            dpx_temp_file = dpx_output_dir+"/{}.%d.dpx"%cnt1 + ".temp"\n'.format(self.plate_file_name)
-            nk += '            os.rename(dpx_output_dir+"/"+target, dpx_temp_file)\n'
-            nk += '            temp_dpxname_list.append(dpx_temp_file)\n'
-            nk += '            cnt1 += 1\n'
-            nk += '    for temp_dpxname in temp_dpxname_list:\n'
-            nk += '        final_name = temp_dpxname.replace(".temp","")\n'
-            nk += '        os.rename(temp_dpxname, final_name)\n'
-            nk += 'else:\n'
-            nk += '    for target in dpx_output_list:\n'
-            nk += '        if ".py" not in target:\n'
-            nk += '            os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.dpx"%cnt1)\n'.format(self.plate_file_name)
-            nk += '            cnt1 += 1\n'
+            nk += 'for target in dpx_output_list:\n'
+            nk += '    if ".py" not in target: \n'
+            nk += '        os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.org.dpx"%cnt1)\n'.format(self.plate_file_name)
+            nk += '        cnt1 += 1\n'
             if self.seq_type != 'lib':
-                nk += 'if len(jpg_output_list) > 1000:\n'
-                nk += '    temp_jpgname_list = []\n'
-                nk += '    for target in jpg_output_list:\n'
-                nk += '        jpg_temp_file = jpg_output_dir+"/{}.%d.dpx"%cnt2 + ".temp"\n'.format(self.plate_file_name)
-                nk += '        os.rename(jpg_output_dir+"/"+target, jpg_temp_file)\n'
-                nk += '        temp_jpgname_list.append(jpg_temp_file)\n'
-                nk += '        cnt2 += 1\n'
-                nk += '    for temp_jpgname in temp_jpgname_list:\n'
-                nk += '        final_name = temp_jpgname.replace(".temp", "")\n'
-                nk += '        os.rename(temp_jpgname, final_name)\n'
-                nk += 'else:\n'
-                nk += '    for target in jpg_output_list:\n'
-                nk += '        os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.jpg"%cnt2)\n'.format(self.plate_file_name)
-                nk += '        cnt2 += 1\n'
+                nk += 'for target in jpg_output_list:\n'
+                nk += '    os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.org.jpg"%cnt2)\n'.format(self.plate_file_name)
+                nk += '    cnt2 += 1\n'
             nk += 'cnt1 = cnt2 = 1001\n'
             nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
-            # if self.seq_type != 'lib':
-            #     nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
-            nk += 'if len(dpx_output_list) > 1000:\n'
-            nk += '    temp_dpxname_list = []\n'
-            nk += '    for target in dpx_output_list:\n'
-            nk += '        if ".py" not in target: \n'
-            nk += '            dpx_temp_file = dpx_output_dir+"/{}.%d.dpx"%cnt1 + ".temp"\n'.format(self.plate_file_name)
-            nk += '            os.rename(dpx_output_dir+"/"+target, dpx_temp_file)\n'
-            nk += '            temp_dpxname_list.append(dpx_temp_file)\n'
-            nk += '            cnt1 += 1\n'
-            nk += '    for temp_dpxname in temp_dpxname_list:\n'
-            nk += '        final_name = temp_dpxname.replace(".temp","")\n'
-            nk += '        os.rename(temp_dpxname, final_name)\n'
-            nk += 'else:\n'
-            nk += '    for target in dpx_output_list:\n'
-            nk += '        if ".py" not in target:\n'
-            nk += '            os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.dpx"%cnt1)\n'.format(self.plate_file_name)
-            nk += '            cnt1 += 1\n'            
             if self.seq_type != 'lib':
                 nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
-                nk += 'if len(jpg_output_list) > 1000:\n'
-                nk += '    temp_jpgname_list = []\n'
-                nk += '    for target in jpg_output_list:\n'
-                nk += '        jpg_temp_file = jpg_output_dir+"/{}.%d.dpx"%cnt2 + ".temp"\n'.format(self.plate_file_name)
-                nk += '        os.rename(jpg_output_dir+"/"+target, jpg_temp_file)\n'
-                nk += '        temp_jpgname_list.append(jpg_temp_file)\n'
-                nk += '        cnt2 += 1\n'
-                nk += '    for temp_jpgname in temp_jpgname_list:\n'
-                nk += '        final_name = temp_jpgname.replace(".temp", "")\n'
-                nk += '        os.rename(temp_jpgname, final_name)\n'
-                nk += 'else:\n'
-                nk += '    for target in jpg_output_list:\n'
-                nk += '        os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.jpg"%cnt2)\n'.format(self.plate_file_name)
-                nk += '        cnt2 += 1\n'
+            nk += 'for target in dpx_output_list:\n'
+            nk += '    if ".py" not in target: \n'
+            nk += '        os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/{}.%d.dpx"%cnt1)\n'.format(self.plate_file_name)
+            nk += '        cnt1 += 1\n'
+            if self.seq_type != 'lib':
+                nk += 'for target in jpg_output_list:\n'
+                nk += '    os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/{}.%d.jpg"%cnt2)\n'.format(self.plate_file_name)
+                nk += '    cnt2 += 1\n'
             nk += 'exit()\n'
 
             if not os.path.exists(os.path.dirname(self.tmp_dpx_to_jpg_file)):
