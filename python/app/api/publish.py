@@ -1543,6 +1543,11 @@ class Publish:
             nk += 'read["colorspace"].setValue("{}")\n'.format( "rec709" )
             nk += 'read["first"].setValue({})\n'.format(start_frame)
             nk += 'read["last"].setValue({})\n'.format(end_frame)
+            if self.setting.datatype == '10 bit':
+                if self.master_input.ext == "mov":
+                    nk += 'read["mov64_decode_video_levels"].setValue("Video Range")\n'
+                elif self.master_input.ext == "mxf":
+                    nk += 'read["dataRange"].setValue("Video Range")\n'
             tg = 'read'
             nk += 'output = "{}"\n'.format(dpx_path)
             nk += 'write  = nuke.nodes.Write(name="ww_write", inputs = [read], file=output )\n'
