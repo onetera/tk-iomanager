@@ -1298,6 +1298,12 @@ class Publish:
             nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
             nk += 'read["first"].setValue( {} )\n'.format(int(self.master_input.just_in))
             nk += 'read["last"].setValue( {} )\n'.format(int(self.master_input.just_out))
+            if self.project['name'] == 'jung' or self.project['name'] == 'RND':
+                if self.setting.datatype == '10 bit':
+                    if self.master_input.ext == "mov":
+                        nk += 'read["mov64_decode_video_levels"].setValue("Video Range")\n'
+                    elif self.master_input.ext == "mxf":
+                        nk += 'read["dataRange"].setValue("Video Range")\n'
             tg = 'read'
             nk += 'output = "{}"\n'.format(org_path)
             nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n' % tg
@@ -1445,6 +1451,12 @@ class Publish:
             nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
             if self.file_ext in ["dpx"] and self.project['name'] == "sweethome":
                 nk += 'read["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
+            elif self.project['name'] == 'jung' or self.project['name'] == 'RND':
+                if self.setting.datatype == '10 bit':
+                    if self.master_input.ext == "mov":
+                        nk += 'read["mov64_decode_video_levels"].setValue("Video Range")\n'
+                    elif self.master_input.ext == "mxf":
+                        nk += 'read["dataRange"].setValue("Video Range")\n'
             tg = 'read'
 
             # gizmo = ''
