@@ -23,7 +23,6 @@ codecs = {
     }
 
 colorspace_set = {
-
     "ACES - ACEScg": "Output - Rec.709",
     "ACES - ACES2065-1": "Output - Rec.709",
     "AlexaV3LogC": "AlexaViewer",
@@ -737,25 +736,34 @@ class Publish:
         self.jpg_task = author.Task(title="render jpg")
         cmd = ['rez-env', 'nuke-12', '--', 'nuke', '-ix', self.nuke_script]
         if self._opt_dpx == True:
-            cmd = ['rez-env', 'natron', '--', 'NatronRenderer', '-t', self.nuke_script]
-            if not self.scan_colorspace.find("ACES") == -1:
-                cmd = ['rez-env', 'natron', 'ocio_config', '--', 'NatronRenderer', '-t', self.nuke_script]
-            if not self.scan_colorspace.find("Alexa") == -1:
-                cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_script]
-            if not self.scan_colorspace.find("legacy") == -1:
-                cmd = ['rez-env', 'natron', 'legacy_config', '--', 'NatronRenderer', '-t', self.nuke_script]
-            if not self.scan_colorspace.find("Sony") == -1:
-                cmd = ['rez-env', 'natron', 'sony_config', '--', 'NatronRenderer', '-t', self.nuke_script]
-            if not self.scan_colorspace.find("Arri") == -1:
-                ### 정년이[jung] 프로젝트에서는 natron을 사용하지 않기로 I/O팀과 결정
-                ##  정년이[jung] 종료 이후에는 복구가능한 코드
-                print('------------------------------------')
-                print(self.project['name'])
-                print('------------------------------------')
-                if self.project['name'] == "jung" or self.project['name'] == 'RND':
-                    cmd = ['rez-env', 'nuke-12', 'aces_config', '--', 'nuke', '-ix', self.nuke_script]
-                else:
+            print('------------------------------------')
+            print(self.project['name'])
+            print('------------------------------------')
+            if self.project['name'] not in ['jung', 'RND']:
+                cmd = ['rez-env', 'natron', '--', 'NatronRenderer', '-t', self.nuke_script]
+                if not self.scan_colorspace.find("ACES") == -1:
+                    cmd = ['rez-env', 'natron', 'ocio_config', '--', 'NatronRenderer', '-t', self.nuke_script]
+                if not self.scan_colorspace.find("Alexa") == -1:
+                    cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_script]
+                if not self.scan_colorspace.find("legacy") == -1:
+                    cmd = ['rez-env', 'natron', 'legacy_config', '--', 'NatronRenderer', '-t', self.nuke_script]
+                if not self.scan_colorspace.find("Sony") == -1:
+                    cmd = ['rez-env', 'natron', 'sony_config', '--', 'NatronRenderer', '-t', self.nuke_script]
+                if not self.scan_colorspace.find("Arri") == -1:
                     cmd = ['rez-env', 'natron', 'alexa4_config', '--', 'NatronRenderer', '-t', self.nuke_script]
+            ### 정년이[jung] 프로젝트에서는 natron을 사용하지 않기로 I/O팀과 결정
+            ##  정년이[jung] 종료 이후에는 복구가능한 코드
+            else:
+                if not self.scan_colorspace.find("ACES") == -1 or self.scan_colorspace =='Output - Rec.709':
+                    cmd = ['rez-env', 'nuke-12', 'ocio_config', '--', 'nuke', '-ix', self.nuke_script]
+                if not self.scan_colorspace.find("Alexa") == -1:
+                    cmd = ['rez-env', 'nuke-12', 'alexa_config', '--', 'nuke', '-ix', self.nuke_script]
+                if not self.scan_colorspace.find("legacy") == -1:
+                    cmd = ['rez-env', 'nuke-12', 'legacy_config', '--', 'nuke', '-ix', self.nuke_script]
+                if not self.scan_colorspace.find("Sony") == -1:
+                    cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_script]
+                if not self.scan_colorspace.find("Arri") == -1:
+                    cmd = ['rez-env', 'nuke-12', 'aces_config', '--', 'nuke', '-ix', self.nuke_script]
             
         else:
             if not self.scan_colorspace.find("ACES") == -1 or self.scan_colorspace == 'Output - Rec.709':
@@ -1551,8 +1559,11 @@ class Publish:
             nk += 'nuke.knob("root.last_frame", "{}")\n'.format(end_frame)
             # nk += 'read = nuke.nodes.Read(file = "{}")\n'.format(read_path)
             nk += 'read = nuke.nodes.Read(name="Read1", file="{}")\n'.format(read_path)
-            # nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
-            nk += 'read["colorspace"].setValue("{}")\n'.format( "rec709" )
+            if not self.scan_colorspace.find( "Arri" ) == -1:
+                nk += 'read["colorspace"].setValue("{}")\n'.format( "rec709" )
+            else:
+                nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
+            # nk += 'read["colorspace"].setValue("{}")\n'.format( "rec709" )
             nk += 'read["first"].setValue({})\n'.format(start_frame)
             nk += 'read["last"].setValue({})\n'.format(end_frame)
             if self.setting.datatype == '10 bit':
@@ -1568,8 +1579,11 @@ class Publish:
             # nk += 'write["datatype"].setValue( "12 bit" )\n'
             nk += 'write["datatype"].setValue( "{}" )\n'.format(self.setting.datatype)
             nk += 'write["create_directories"].setValue(True)\n'
-            # nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
-            nk += 'write["colorspace"].setValue("{}")\n'.format( "rec709" )
+            
+            if not self.scan_colorspace.find( "Arri" ) == -1:
+                nk += 'write["colorspace"].setValue("{}")\n'.format( "rec709" )
+            else:
+                nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
             nk += 'nuke.execute(write, {}, {}, 1)\n'.format(start_frame, end_frame)
             
             img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_path, color,
@@ -1582,7 +1596,21 @@ class Publish:
 
             with open(self.tmp_dpx_to_jpg_file, 'w') as f:
                 f.write(img_nk)
-            color_config = 'aces_config'
+            color_config = 'alexa_config'
+            if not self.scan_colorspace.find("ACES") == -1:
+                color_config = 'ocio_config'
+            if not self.scan_colorspace.find("Alexa") == -1:
+                color_config = 'alexa_config'
+            if not self.scan_colorspace.find("legacy") == -1:
+                color_config = 'legacy_config'
+            if not self.scan_colorspace.find("Sony") == -1:
+                color_config = 'sony_config'
+            if not self.scan_colorspace.find( "Arri" ) == -1:
+                color_config = 'aces_config'
+            if not self.scan_colorspace.find( "Output" ) == -1:
+                color_config = 'ocio_config'
+
+
             nk += 'os.system("rez-env nuke-12 {} -- nuke -ix {}")\n'.format(color_config, self.tmp_dpx_to_jpg_file)
 
             nk += 'dpx_output_dir = os.path.dirname("{}")\n'.format(dpx_path)
