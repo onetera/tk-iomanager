@@ -1314,7 +1314,7 @@ class Publish:
                         nk += 'read["dataRange"].setValue("Video Range")\n'
             tg = 'read'
             nk += 'output = "{}"\n'.format(org_path)
-            nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n' % tg
+            nk += 'write = nuke.nodes.Write(name="Write_org", inputs = [%s],file=output )\n' % tg
             nk += 'write["file_type"].setValue( "mov" )\n'
             nk += 'write["create_directories"].setValue(True)\n'
             nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
@@ -1328,7 +1328,7 @@ class Publish:
                                                            int(self.master_input.just_out))
 
             nk += 'output = "{}"\n'.format(mov_path)
-            nk += 'write = nuke.nodes.Write(inputs = [%s],file=output )\n' % tg
+            nk += 'write = nuke.nodes.Write(name="Write_mov", inputs = [%s],file=output )\n' % tg
             nk += 'write["file_type"].setValue( "mov" )\n'
             nk += 'write["create_directories"].setValue(True)\n'
             nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
@@ -1385,24 +1385,25 @@ class Publish:
         if int(width) > 2048:
             nk += 'reformat = nuke.nodes.Reformat(inputs=[%s],type=2,scale=.5)\n' % tg
             reformat = 'reformat'
-        nk += 'output = "{}"\n'.format(mov_path)
-        if int(width) > 2048:
-            nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n' % reformat
-        else:
-            nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n' % tg
-        nk += 'write["file_type"].setValue( "mov" )\n'
-        nk += 'write["create_directories"].setValue(True)\n'
-        nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
-        if self.setting.dnxhd_profile:
-            nk += 'write["mov64_dnxhd_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhd_profile )
-        if self.setting.dnxhr_profile:
+        if self.project['name'] not in ['jung', 'RND'] :
+            nk += 'output = "{}"\n'.format(mov_path)
+            if int(width) > 2048:
+                nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n' % reformat
+            else:
+                nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n' % tg
+            nk += 'write["file_type"].setValue( "mov" )\n'
+            nk += 'write["create_directories"].setValue(True)\n'
+            nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
+            if self.setting.dnxhd_profile:
+                nk += 'write["mov64_dnxhd_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhd_profile )
+            if self.setting.dnxhr_profile:
                 nk += 'write["mov64_dnxhr_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhr_profile )
 
-        nk += 'write["colorspace"].setValue("{}")\n'.format(output_color)
-        nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
-        # nk += 'write["colorspace"].setValue( "Cineon" )\n'
-        # nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
-        nk += 'nuke.execute(write,{},{},1)\n'.format(start_frame, end_frame)
+            nk += 'write["colorspace"].setValue("{}")\n'.format(output_color)
+            nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
+            # nk += 'write["colorspace"].setValue( "Cineon" )\n'
+            # nk += 'nuke.scriptSaveAs( "{}",overwrite=True )\n'.format( nuke_file )
+            nk += 'nuke.execute(write,{},{},1)\n'.format(start_frame, end_frame)
         nk += 'exit()\n'
         return nk
 
@@ -1529,8 +1530,7 @@ class Publish:
         ### 정년이[jung] 프로젝트에서는 natron을 사용하지 않기로 I/O팀과 결정
         ##  정년이[jung] 종료 이후에는 복구가능한 코드 
         # -> 프로젝트 종료 후에도 aces_config 사용하면 natron 대신 nuke 사용할 수도 있음
-        elif self._opt_dpx == True \
-            and (self.project['name'] == 'jung' or self.project['name'] == 'RND'):
+        elif self._opt_dpx == True and self.project['name'] in ['jung', 'RND']:
             img_nk = ''
             self.use_natron = False
 
