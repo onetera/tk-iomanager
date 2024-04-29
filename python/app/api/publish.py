@@ -1306,7 +1306,7 @@ class Publish:
             nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
             nk += 'read["first"].setValue( {} )\n'.format(int(self.master_input.just_in))
             nk += 'read["last"].setValue( {} )\n'.format(int(self.master_input.just_out))
-            if self.project['name'] == 'jung' or self.project['name'] == 'RND':
+            if self.project['name'] in ['jung', 'RND']:
                 if self.setting.datatype == '10 bit':
                     if self.master_input.ext == "mov":
                         nk += 'read["mov64_decode_video_levels"].setValue("Video Range")\n'
@@ -1583,7 +1583,8 @@ class Publish:
             if not self.scan_colorspace.find( "Arri" ) == -1:
                 nk += 'write["colorspace"].setValue("{}")\n'.format( "rec709" )
             else:
-                nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
+                # nk += 'write["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
+                nk += 'write["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
             nk += 'nuke.execute(write, {}, {}, 1)\n'.format(start_frame, end_frame)
             
             img_nk += self.create_dpx_to_output_script(start_frame, end_frame, dpx_path, jpg_path, color,
