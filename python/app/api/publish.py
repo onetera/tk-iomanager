@@ -1307,11 +1307,10 @@ class Publish:
             nk += 'read["first"].setValue( {} )\n'.format(int(self.master_input.just_in))
             nk += 'read["last"].setValue( {} )\n'.format(int(self.master_input.just_out))
             if self.project['name'] in ['jung', 'RND']:
-                if self.setting.datatype == '10 bit':
-                    if self.master_input.ext == "mov":
-                        nk += 'read["mov64_decode_video_levels"].setValue("Video Range")\n'
-                    elif self.master_input.ext == "mxf":
-                        nk += 'read["dataRange"].setValue("Video Range")\n'
+                if self.master_input.ext == "mov":
+                    nk += 'read["mov64_decode_video_levels"].setValue("Video Range")\n'
+                if self.setting.datatype == '10 bit' and self.master_input.ext == "mxf":
+                    nk += 'read["dataRange"].setValue("Video Range")\n'
             tg = 'read'
             nk += 'output = "{}"\n'.format(org_path)
             nk += 'write = nuke.nodes.Write(name="Write_org", inputs = [%s],file=output )\n' % tg
