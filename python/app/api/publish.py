@@ -1617,7 +1617,58 @@ class Publish:
             nk += 'jpg_output_dir = os.path.dirname("{}")\n'.format(jpg_path)
             nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
             nk += 'cnt1 = cnt2 = 1001\n'
-            if start_frame != 1:
+            if len(str(int(self.master_input.just_out))) > 4:
+                nk += 'import shutil\n'
+                nk += 'dpx_temp_dir = os.path.dirname(dpx_output_dir)+"/"+"{}_dpx_temp"\n'.format(self.plate_file_name)
+                nk += 'if not os.path.exists(dpx_temp_dir):\n'
+                nk += '    os.makedirs(dpx_temp_dir)\n'
+                nk += 'temp_dpxname_list = []\n'
+                nk += 'for target in dpx_output_list:\n'
+                nk += '    if ".py" not in target: \n'
+                nk += '        name = target.split(".")\n'
+                nk += '        if len(name[1]) != {}:\n'.format(len(str(int(self.master_input.just_out))))
+                nk += '            res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(int(self.master_input.just_out))))
+                nk += '            os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/"+res)\n'
+                nk += '            temp_dpxname_list.append(res)\n'
+                nk += '        else:\n'
+                nk += '            temp_dpxname_list.append(target)\n'
+                nk += 'temp_dpxname_list = sorted(temp_dpxname_list)\n'
+                nk += 'for i in temp_dpxname_list:\n'
+                nk += '    name = i.split(".")\n'
+                if len(str(int(self.master_input.just_out))) > len(str(int(self.master_input.duration))):
+                    nk += '    cleanup_dpxname = name[0] + "." + str(cnt1) + "." + name[2]\n'
+                    nk += '    cnt1 += 1\n'
+                else:
+                    nk += '    cleanup_dpxname = name[0] + "." + str(int(name[1])+cnt1-1) + "." + name[2]\n'
+                nk += '    shutil.move(dpx_output_dir+"/"+i, dpx_temp_dir+"/"+cleanup_dpxname)\n'
+                nk += 'if not len(os.listdir(dpx_output_dir)):\n'
+                nk += '    os.rmdir(dpx_output_dir)\n'
+                nk += 'os.rename(dpx_temp_dir, dpx_output_dir)\n'
+                nk += 'jpg_temp_dir = os.path.dirname(jpg_output_dir)+"/"+"{}_jpg_temp"\n'.format(self.plate_file_name)
+                nk += 'if not os.path.exists(jpg_temp_dir):\n'
+                nk += '    os.makedirs(jpg_temp_dir)\n'
+                nk += 'temp_jpgname_list = []\n'
+                nk += 'for target in jpg_output_list:\n'
+                nk += '        name = target.split(".")\n'
+                nk += '        if len(name[1]) != {}:\n'.format(len(str(int(self.master_input.just_out))))
+                nk += '            res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(int(self.master_input.just_out))))
+                nk += '            os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/"+res)\n'
+                nk += '            temp_jpgname_list.append(res)\n'
+                nk += '        else:\n'
+                nk += '            temp_jpgname_list.append(target)\n'
+                nk += 'temp_jpgname_list = sorted(temp_jpgname_list)\n'
+                nk += 'for i in temp_jpgname_list:\n'
+                nk += '    name = i.split(".")\n'
+                if len(str(int(self.master_input.just_out))) > len(str(int(self.master_input.duration))):
+                    nk += '    cleanup_jpgname = name[0] + "." + str(cnt2) + "." + name[2]\n'
+                    nk += '    cnt2 += 1\n'
+                else:
+                    nk += '    cleanup_jpgname = name[0] + "." + str(int(name[1])+cnt2-1) + "." + name[2]\n'
+                nk += '    shutil.move(jpg_output_dir+"/"+i, jpg_temp_dir+"/"+cleanup_jpgname)\n'
+                nk += 'if not len(os.listdir(jpg_output_dir)):\n'
+                nk += '    os.rmdir(jpg_output_dir)\n'
+                nk += 'os.rename(jpg_temp_dir, jpg_output_dir)\n'
+            elif start_frame != 1:
                 nk += 'temp_dpxname_list = []\n'
                 nk += 'for target in dpx_output_list:\n'
                 nk += '    if ".py" not in target: \n'
@@ -1637,49 +1688,6 @@ class Publish:
                 nk += 'for temp_jpgname in temp_jpgname_list:\n'
                 nk += '    final_name = temp_jpgname.replace(".temp", "")\n'
                 nk += '    os.rename(temp_jpgname, final_name)\n'
-            elif self.master_input.duration > 1000:
-                nk += 'import shutil\n'
-                nk += 'dpx_temp_dir = os.path.dirname(dpx_output_dir)+"/"+"{}_dpx_temp"\n'.format(self.plate_file_name)
-                nk += 'if not os.path.exists(dpx_temp_dir):\n'
-                nk += '    os.makedirs(dpx_temp_dir)\n'
-                nk += 'temp_dpxname_list = []\n'
-                nk += 'for target in dpx_output_list:\n'
-                nk += '    if ".py" not in target: \n'
-                nk += '        name = target.split(".")\n'
-                nk += '        if len(name[1]) != {}:\n'.format(len(str(self.master_input.duration)))
-                nk += '            res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(self.master_input.duration)))
-                nk += '            os.rename(dpx_output_dir+"/"+target, dpx_output_dir+"/"+res)\n'
-                nk += '            temp_dpxname_list.append(res)\n'
-                nk += '        else:\n'
-                nk += '            temp_dpxname_list.append(target)\n'
-                nk += 'temp_dpxname_list = sorted(temp_dpxname_list)\n'
-                nk += 'for i in temp_dpxname_list:\n'
-                nk += '    name = i.split(".")\n'
-                nk += '    cleanup_dpxname = name[0] + "." + str(int(name[1])+cnt1-1) + "." + name[2]\n'
-                nk += '    shutil.move(dpx_output_dir+"/"+i, dpx_temp_dir+"/"+cleanup_dpxname)\n'
-                nk += 'if not len(os.listdir(dpx_output_dir)):\n'
-                nk += '    os.rmdir(dpx_output_dir)\n'
-                nk += 'os.rename(dpx_temp_dir, dpx_output_dir)\n'
-                nk += 'jpg_temp_dir = os.path.dirname(jpg_output_dir)+"/"+"{}_jpg_temp"\n'.format(self.plate_file_name)
-                nk += 'if not os.path.exists(jpg_temp_dir):\n'
-                nk += '    os.makedirs(jpg_temp_dir)\n'
-                nk += 'temp_jpgname_list = []\n'
-                nk += 'for target in jpg_output_list:\n'
-                nk += '        name = target.split(".")\n'
-                nk += '        if len(name[1]) != {}:\n'.format(len(str(self.master_input.duration)))
-                nk += '            res = name[0] + "." + name[1].zfill({}) + "." + name[2]\n'.format(len(str(self.master_input.duration)))
-                nk += '            os.rename(jpg_output_dir+"/"+target, jpg_output_dir+"/"+res)\n'
-                nk += '            temp_jpgname_list.append(res)\n'
-                nk += '        else:\n'
-                nk += '            temp_jpgname_list.append(target)\n'
-                nk += 'temp_jpgname_list = sorted(temp_jpgname_list)\n'
-                nk += 'for i in temp_jpgname_list:\n'
-                nk += '    name = i.split(".")\n'
-                nk += '    cleanup_jpgname = name[0] + "." + str(int(name[1])+cnt2-1) + "." + name[2]\n'
-                nk += '    shutil.move(jpg_output_dir+"/"+i, jpg_temp_dir+"/"+cleanup_jpgname)\n'
-                nk += 'if not len(os.listdir(jpg_output_dir)):\n'
-                nk += '    os.rmdir(jpg_output_dir)\n'
-                nk += 'os.rename(jpg_temp_dir, jpg_output_dir)\n'
             else:
                 nk += 'for target in dpx_output_list:\n'
                 nk += '    if ".py" not in target: \n'
