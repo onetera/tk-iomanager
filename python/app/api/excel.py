@@ -699,15 +699,16 @@ def get_time_code(dir_name,head,frame_format,frame,tail):
         start_timecode = Timecode(round(frame_rate),str(start_timecode))
         return str(start_timecode + (int(frame) - 1))
 
+# publish data와 일치하도록 "."을 삭제
     if tail == "exr":
-        exr_file = os.path.join(dir_name,head+"."+frame_format%frame+"."+tail)
+        exr_file = os.path.join(dir_name,head+frame_format%frame+"."+tail)
         exr = OpenEXR.InputFile(exr_file)
         if exr.header().has_key("timeCode"):
             ti = exr.header()['timeCode']
             return "%02d:%02d:%02d:%02d"%(ti.hours,ti.minutes,ti.seconds,ti.frame)
         return ""
     elif tail == "dpx":
-        dpx_file = os.path.join(dir_name,head+"."+frame_format%frame+"."+tail)
+        dpx_file = os.path.join(dir_name,head+frame_format%frame+"."+tail)
         dpx = pydpx_meta.DpxHeader(dpx_file)
         return dpx.tv_header.time_code
     else:
