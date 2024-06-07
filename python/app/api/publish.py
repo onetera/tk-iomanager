@@ -691,10 +691,11 @@ class Publish:
                 "sg_cut_duration" :  int( self.master_input.just_out ) - int( self.master_input.just_in ) + 1 
                }
         
+        # 제일 마지막 정보가 리타임 정보로 들어가도록 수정
         if self.master_input.retime_job:
-            desc["sg_retime_duration"] = self.master_input.retime_duration
-            desc["sg_retime_percent"] = self.master_input.retime_percent
-            desc["sg_retime_start_frame"] = int( self.master_input.retime_start_frame)
+            desc["sg_retime_duration"] = str( self.master_input.retime_info[-1]['retime_duration'] )
+            desc["sg_retime_percent"] = str( self.master_input.retime_info[-1]['retime_percent'] )
+            desc["sg_retime_start_frame"] = int( self.master_input.retime_info[-1]['retime_start_frame'] )
         #tk-download에서 sg_cut_duration정보 필요로 인해 src, editor, org 모두 sg_cut_duration을 등록하는 방식으로 변경
         # if self.seq_type == "editor" or self.seq_type == "src":
             ## duration 값만 올라 가는 방식에서 just_out - just_in + 1 방식으로 변경
