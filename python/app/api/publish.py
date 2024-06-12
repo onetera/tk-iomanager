@@ -1627,7 +1627,7 @@ class Publish:
             nk += 'jpg_output_dir = os.path.dirname("{}")\n'.format(jpg_path)
             nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
             nk += 'cnt1 = cnt2 = 1001\n'
-            if len(str(int(self.master_input.just_out))) > 4:
+            if len(str(int(self.master_input.duration))) >= 4:
                 nk += 'import shutil\n'
                 nk += 'dpx_temp_dir = os.path.dirname(dpx_output_dir)+"/"+"{}_dpx_temp"\n'.format(self.plate_file_name)
                 nk += 'if not os.path.exists(dpx_temp_dir):\n'
