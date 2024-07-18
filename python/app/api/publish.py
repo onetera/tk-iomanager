@@ -365,8 +365,8 @@ class Publish:
                 cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             if not self.scan_colorspace.find("Arri") == -1:
                 cmd = ['rez-env', 'nuke-12', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_retime_script]
-                if self.project['name'] == "jung" or self.project['name'] == 'RND':
-                    cmd = ['rez-env', 'nuke-12', 'aces_config', '--', 'nuke', '-ix', self.nuke_retime_script]
+                if self.project['name'] in ["jung", "RND"]:
+                    cmd = ['rez-env', 'nuke-13', 'aces_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
             self.jpg_task.addChild(self.org_task)
@@ -386,8 +386,8 @@ class Publish:
                 cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("Arri") == -1:
                 cmd = ['rez-env', 'nuke-12', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_mov_script]
-                if self.project['name'] == "jung" or self.project['name'] == 'RND':
-                    cmd = ['rez-env', 'nuke-12', 'aces_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+                if self.project['name'] in ["jung", "RND"]:
+                    cmd = ['rez-env', 'nuke-13', 'aces_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if self._opt_dpx == True:
                 if self.seq_type != 'lib' and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
                     cmd = ["echo", "'pass'"]
@@ -765,15 +765,15 @@ class Publish:
             ##  정년이[jung] 종료 이후에는 복구가능한 코드
             else:
                 if not self.scan_colorspace.find("ACES") == -1 or self.scan_colorspace =='Output - Rec.709':
-                    cmd = ['rez-env', 'nuke-12', 'ocio_config', '--', 'nuke', '-ix', self.nuke_script]
+                    cmd = ['rez-env', 'nuke-13', 'ocio_config', '--', 'nuke', '-ix', self.nuke_script]
                 if not self.scan_colorspace.find("Alexa") == -1:
-                    cmd = ['rez-env', 'nuke-12', 'alexa_config', '--', 'nuke', '-ix', self.nuke_script]
+                    cmd = ['rez-env', 'nuke-13', 'alexa_config', '--', 'nuke', '-ix', self.nuke_script]
                 if not self.scan_colorspace.find("legacy") == -1:
-                    cmd = ['rez-env', 'nuke-12', 'legacy_config', '--', 'nuke', '-ix', self.nuke_script]
+                    cmd = ['rez-env', 'nuke-13', 'legacy_config', '--', 'nuke', '-ix', self.nuke_script]
                 if not self.scan_colorspace.find("Sony") == -1:
-                    cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_script]
+                    cmd = ['rez-env', 'nuke-13', 'sony_config', '--', 'nuke', '-ix', self.nuke_script]
                 if not self.scan_colorspace.find("Arri") == -1:
-                    cmd = ['rez-env', 'nuke-12', 'aces_config', '--', 'nuke', '-ix', self.nuke_script]
+                    cmd = ['rez-env', 'nuke-13', 'aces_config', '--', 'nuke', '-ix', self.nuke_script]
             
         else:
             if not self.scan_colorspace.find("ACES") == -1 or self.scan_colorspace == 'Output - Rec.709':
@@ -1620,14 +1620,14 @@ class Publish:
                 color_config = 'ocio_config'
 
 
-            nk += 'os.system("rez-env nuke-12 {} -- nuke -ix {}")\n'.format(color_config, self.tmp_dpx_to_jpg_file)
+            nk += 'os.system("rez-env nuke-13 {} -- nuke -ix {}")\n'.format(color_config, self.tmp_dpx_to_jpg_file)
 
             nk += 'dpx_output_dir = os.path.dirname("{}")\n'.format(dpx_path)
             nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
             nk += 'jpg_output_dir = os.path.dirname("{}")\n'.format(jpg_path)
             nk += 'jpg_output_list = sorted(os.listdir(jpg_output_dir))\n'
             nk += 'cnt1 = cnt2 = 1001\n'
-            if len(str(int(self.master_input.just_out))) != len(str(int(self.master_input.just_in))):
+            if len(str(int(self.master_input.just_out))) != len(str(int(self.master_input.just_in))) or len(str(int(self.master_input.duration))) >= 4:
                 nk += 'import shutil\n'
                 nk += 'dpx_temp_dir = os.path.dirname(dpx_output_dir)+"/"+"{}_dpx_temp"\n'.format(self.plate_file_name)
                 nk += 'if not os.path.exists(dpx_temp_dir):\n'
