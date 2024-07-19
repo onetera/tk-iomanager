@@ -374,10 +374,14 @@ class Publish:
         elif self.nuke_mov_script:
             self.org_task = author.Task(title="create mov")
             cmd = ['rez-env', 'nuke-12', '--', 'nuke', '-ix', self.nuke_mov_script]
+            if self.project['name'] in ["jung", "RND"]:
+                cmd = ['rez-env', 'nuke-13', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("ACES") == -1:
                 cmd = ['rez-env', 'nuke-12', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find( 'Output' ) == -1:
                 cmd = ['rez-env', 'nuke-12', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+                if self.project['name'] in ["jung", "RND"]:
+                    cmd = ['rez-env', 'nuke-13', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("Alexa") == -1:
                 cmd = ['rez-env', 'nuke-12', 'alexa_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("legacy") == -1:
