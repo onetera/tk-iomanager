@@ -1163,6 +1163,7 @@ class Publish:
             nk += 'write["file_type"].setValue( "{}" )\n'.format(self.file_ext)
             if self.file_ext == "exr":
                 nk += 'write["compression"].setValue("PIZ Wavelet (32 scanlines)")\n'
+                nk += 'write["metadata"].setValue(3)\n'
             nk += 'write["create_directories"].setValue(True)\n'
             nk += 'write["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
             nk += 'write["frame"].setValue( "frame+1000+{}")\n'.format(int(info['retime_start_frame'] - 1))
