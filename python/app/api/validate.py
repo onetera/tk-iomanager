@@ -151,12 +151,9 @@ class Validate(object):
                     ]
                 
                 if self.project['name'] in ['nph', 'RND']:
-                    shot_ents = self._sg.find("Shot", filter_shot, ['code', 'sg_sequence', 'sg_status_list'])
-                    for shot in shot_ents:
-                        if shot['sg_status_list'] not in ['dis', 'omt'] and shot['sg_sequence']:
-                            shot_ent = shot
-                else:
-                    shot_ent = self._sg.find_one("Shot",filter_shot,['code','sg_sequence'])
+                    filter_shot.append(['sg_status_list', 'not_in', ['omt', 'dis']])
+                
+                shot_ent = self._sg.find_one("Shot",filter_shot,['code','sg_sequence'])
                     
                 if shot_ent:
                     print(shot_ent)
@@ -176,15 +173,9 @@ class Validate(object):
                 ]
 
         if self.project['name'] in ['nph', 'RND']:
-            fields = ['code', 'sg_status_list', 'sg_sequence']
-            shot_ents = self._sg.find('Shot', key, fields)
+            key.append(['sg_status_list', 'not_in', ['omt', 'dis']])
 
-            if shot_ents:
-                for shot in shot_ents:
-                    if shot['sg_status_list'] not in ['dis', 'omt'] and shot['sg_sequence']:
-                        shot_ent = shot
-        else:
-            shot_ent = self._sg.find_one('Shot',key)
+        shot_ent = self._sg.find_one('Shot',key)
 
         key = [
                 ['project','is',self.project],
