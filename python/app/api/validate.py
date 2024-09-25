@@ -149,10 +149,17 @@ class Validate(object):
                     ['project','is',self.project],
                     ['sg_timecode_in','is',start_tc]
                     ]
-
-                shot_ent = self._sg.find_one("Shot",filter_shot,['code','sg_sequence'])
+                
+                if self.project['name'] in ['nph', 'RND']:
+                    shot_ents = self._sg.find("Shot", filter_shot, ['code', 'sg_sequence', 'sg_status_list'])
+                    for shot in shot_ents:
+                        if shot['sg_status_list'] not in ['dis', 'omt'] and shot['sg_sequence']:
+                            shot_ent = shot
+                else:
+                    shot_ent = self._sg.find_one("Shot",filter_shot,['code','sg_sequence'])
+                    
                 if shot_ent:
-                    print shot_ent
+                    print(shot_ent)
                     self._set_data(row,MODEL_KEYS['seq_name'],shot_ent['sg_sequence']['name'])
                     self._set_data(row,MODEL_KEYS['shot_name'],shot_ent['code'])
 
@@ -168,7 +175,16 @@ class Validate(object):
                 ['code','is',shot_name]
                 ]
 
-        shot_ent = self._sg.find_one('Shot',key)
+        if self.project['name'] in ['nph', 'RND']:
+            fields = ['code', 'sg_status_list', 'sg_sequence']
+            shot_ents = self._sg.find('Shot', key, fields)
+
+            if shot_ents:
+                for shot in shot_ents:
+                    if shot['sg_status_list'] not in ['dis', 'omt'] and shot['sg_sequence']:
+                        shot_ent = shot
+        else:
+            shot_ent = self._sg.find_one('Shot',key)
 
         key = [
                 ['project','is',self.project],
