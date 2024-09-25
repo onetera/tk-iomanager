@@ -60,21 +60,15 @@ class ShotgunCommands(object):
               ]
         
         if project['name'] in ['RND', 'nph']:
-            fields = ['code', 'sg_status_list', 'sg_sequence']
-            shot_ent = self._sg.find('Shot', key, fields)
-        else:
-            shot_ent = self._sg.find_one('Shot', key)
+            key.append(['sg_status_list', 'not_in', ['omt', 'dis']])
+
+        shot_ent = self._sg.find_one('Shot', key)
 
         if 'src' in shot_name:
             fields = ['code', 'tags']
             shot_ent = self._sg.find_one('Shot', key, fields)
 
         if shot_ent:
-            if isinstance(shot_ent, list):
-                for shot in shot_ent:
-                    if shot['sg_status_list'] not in ['dis', 'omt'] and shot['sg_sequence']:
-                        shot_ent = shot
-
             if 'src' not in shot_name or 'tags' in shot_ent.keys():
                 self.shot_ent = shot_ent
                 return self.shot_ent
