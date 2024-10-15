@@ -85,7 +85,7 @@ class AppDialog(QtGui.QWidget):
         if not colorspace.find("ACES") == -1:
             colorspace = "ACES - " + colorspace
 
-        print colorspace
+        print(colorspace)
         self.ui.colorspace_combo.setCurrentIndex(
             self.ui.colorspace_combo.findText(colorspace))
 
@@ -207,6 +207,9 @@ class AppDialog(QtGui.QWidget):
         model = self.ui.seq_model_view.model()
         colorspace = str(self.ui.colorspace_combo.currentText())
         group_model = OrderedDict()
+
+        context_project, sgtk_project = self._confirm_project()
+
         for row in range(0, model.rowCount(None)):
             index = model.createIndex(row, 0)
             check = model.data(index, QtCore.Qt.CheckStateRole)
@@ -222,6 +225,20 @@ class AppDialog(QtGui.QWidget):
                 tag_name_index = model.createIndex(row, MODEL_KEYS['clip_tag'])
                 tag_name = model.data(tag_name_index, QtCore.Qt.DisplayRole)
                 dict_name = shot_name + "_" + scan_name + "_" + scan_type + "_" + scan_version
+
+                seq_path_index = model.createIndex(row, MODEL_KEYS['scan_path'])
+                seq_path = model.data(seq_path_index,QtCore.Qt.DisplayRole)
+                seq_path_project = str(seq_path.split('/')[2])
+
+                if seq_path_project != context_project:
+                    QtGui.QMessageBox.critical(None, 'Project name Invaild', 
+                                       'Different Project name\n Scan path Project : "{0}"\n Toolkit Project : "{1}"'.format(seq_path_project, context_project))
+                    return
+                elif sgtk_project != context_project:
+                    QtGui.QMessageBox.critical(None, 'Project name Invaild', 
+                                       'Different Project name\n SGTK path Project : "{0}"\n Toolkit Project : "{1}"'.format(sgtk_project, context_project))
+                    return
+
                 if group_model.has_key(dict_name):
                     group_model[dict_name].append(row)
                 else:
@@ -232,7 +249,7 @@ class AppDialog(QtGui.QWidget):
                 # else:
                 #     pass
 
-        print group_model
+        print(group_model)
         for value in group_model.values():
             master_input = publish.MasterInput(model, value, 'shot_name')
 
@@ -280,13 +297,23 @@ class AppDialog(QtGui.QWidget):
                         group_model[dict_name].append(row)
 
         for key in shot_group_model.keys():
-            print key
-            print shot_group_model[key]
+            print(key)
+            print(shot_group_model[key])
             merge = True
             collect.Collect(model, key, shot_group_model[key], colorspace, str(collect_path), merge)
 
-        print group_model
+        print(group_model)
         for key in group_model.keys():
-            print key
-            print group_model[key]
+            print(key)
+            print(group_model[key])
             collect.Collect(model, key, group_model[key], colorspace, str(collect_path))
+    
+
+    def _confirm_project(self):
+        context = self._app.context
+        context_project = context.project
+        context_project = context_project['name']
+
+        sgtk_project = self._app.sgtk.project_path.split('/')[2]
+
+        return context_project, sgtk_project
