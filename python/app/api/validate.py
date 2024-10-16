@@ -186,7 +186,7 @@ class Validate(object):
         shot_name = self._get_data(row,MODEL_KEYS['shot_name'])
         version_name = shot_name + "_" + file_type
 
-        if self.project['name'] in ['pamyo', 'RND']:
+        if self.project['name'] in ['pamyo', 'RND', 'nph']:
             seq_name = shot_name.split('_')[0]
             plate_path = os.path.join(self._app.sgtk.project_path, 'seq', seq_name, shot_name, 'plate')
             
@@ -253,8 +253,8 @@ class Validate(object):
                     ['code','is',shot_name]
                     ]
 
-            if self.project['name'] in ['nph', 'RND']:
-                key.append(['sg_status_list', 'not_in', ['omt', 'dis']])
+            # if self.project['name'] in ['nph', 'RND']:
+            #     key.append(['sg_status_list', 'not_in', ['omt', 'dis']])
 
             shot_ent = self._sg.find_one('Shot',key)
 
