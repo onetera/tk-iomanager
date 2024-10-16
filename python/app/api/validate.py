@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import os
+from datetime import datetime
+import re
 import sgtk
 from sgtk.platform.qt import QtCore, QtGui
 from timecode import Timecode
@@ -114,21 +116,37 @@ class Validate(object):
                 continue
 
             type_value = self._get_data(row,MODEL_KEYS['type'])
-            if not type_value.find("src") ==  -1:
-                shot_name = self._get_data(row,MODEL_KEYS['shot_name'])
-            if group_model.has_key(shot_name):
-                group_model[shot_name].append(row)
+            shot_name = self._get_data(row,MODEL_KEYS['shot_name'])
+            if not type_value.find("src") == -1:
+                if group_model.has_key(shot_name):
+                    group_model[shot_name].append(row)
+                else:
+                    group_model[shot_name] = []
+                    group_model[shot_name].append(row)
             else:
-                group_model[shot_name] = []
-                group_model[shot_name].append(row)
+                QtGui.QMessageBox.critical(None, 'Type Error', 
+                    "'{0}'th checkd shot_name : '{1}' not correct type. (type : '{2}')".format(row, shot_name, type_value))
+                return
         
         for value in group_model.values():
-            print value
+            print(value)
             add_value = 0
             for row in value:
                 version = self._get_data(row,MODEL_KEYS['version'])
-                self._set_data(row,MODEL_KEYS['version'],int(version)+add_value)
-                add_value += 1
+                if version != '' and (isinstance(version, float) or isinstance(version, int)):
+                    version = int(version)
+
+                if isinstance(version, int):
+                    self._set_data(row,MODEL_KEYS['version'],version+add_value)
+                    add_value += 1
+                elif version == '':
+                    QtGui.QMessageBox.critical(None, 'Version Empty', 
+                        "'{0}'th checkd shot_name : '{1}' version number is empty.".format(row, shot_name))
+                    return
+                else:
+                    QtGui.QMessageBox.critical(None, 'Version Wrong Info', 
+                        "'{0}'th checkd shot_name : '{1}' version is wrong information.".format(row, shot_name))
+                    return
     
     def check_editor_shot(self):
 
@@ -167,27 +185,90 @@ class Validate(object):
         file_type_ent = self.published_file_type(file_type)
         shot_name = self._get_data(row,MODEL_KEYS['shot_name'])
         version_name = shot_name + "_" + file_type
-        key = [
-                ['project','is',self.project],
-                ['code','is',shot_name]
-                ]
 
-        if self.project['name'] in ['nph', 'RND']:
-            key.append(['sg_status_list', 'not_in', ['omt', 'dis']])
+        if self.project['name'] in ['pamyo', 'RND']:
+            seq_name = shot_name.split('_')[0]
+            plate_path = os.path.join(self._app.sgtk.project_path, 'seq', seq_name, shot_name, 'plate')
+            
+            if os.path.exists(plate_path):
+                plate_path_list = os.listdir(plate_path)
+                plate_path_list = sorted(plate_path_list, key=self._get_mov_version_key)
 
-        shot_ent = self._sg.find_one('Shot',key)
+                if len(plate_path_list) > 0:
+                    ver_list = []
+                    ver_file_date = []
 
-        key = [
-                ['project','is',self.project],
-                ['entity','is',shot_ent],
-                ["published_file_type","is",file_type_ent],
-                ['name','is',version_name]
-               ]
-        published_ents = self._sg.find("PublishedFile",key,['version_number','created_at'])
-        if not published_ents:
-            return 1,""
+                    for plate in plate_path_list:
+                        mov_path = os.path.join(plate_path, plate)
+
+                        file_name, ext = os.path.splitext(plate)
+
+                        plate_type = file_name.split('_')
+                        if len(plate_type) >= 4:
+                            plate_type = plate_type[-2]
+                        else:
+                            plate_type = ''
+                        
+                        mov_match = re.search(r'v(\d+)', plate)
+                        
+                        if os.path.isfile(mov_path) and ext == '.mov' and plate_type == file_type and file_type == 'editor' and mov_match\
+                            and int(mov_match.group(1)) not in ver_list:
+                            ver_list.append(int(mov_match.group(1)))
+                            
+                            time_stamp = os.path.getmtime(mov_path)
+                            dt = datetime.fromtimestamp(time_stamp)
+                            formatted_time = dt.strftime('%Y-%m-%d %H:%M:%S') + '+09:00'
+                            formatted_time = formatted_time[:-2] + formatted_time[-2:]
+                            ver_file_date.append(formatted_time)
+
+                        elif os.path.isdir(mov_path) and plate in ['org', 'src'] and file_type in ['org', 'src'] and plate == file_type:
+                            image_dir = mov_path
+                            image_ver_list = os.listdir(image_dir)
+                            image_ver_list = sorted(image_ver_list, key=self._get_image_version_key)
+
+                            for image in image_ver_list:
+                                image_path = os.path.join(image_dir, image)
+                                image_match = re.search(r'v(\d+)', image)
+                                if image_match and int(image_match.group(1)) not in ver_list:
+                                    ver_list.append(int(image_match.group(1)))
+
+                                    time_stamp = os.path.getmtime(image_path)
+                                    dt = datetime.fromtimestamp(time_stamp)
+                                    formatted_time = dt.strftime('%Y-%m-%d %H:%M:%S') + '+09:00'
+                                    formatted_time = formatted_time[:-2] + ':' + formatted_time[-2:]
+                                    ver_file_date.append(formatted_time)
+
+                    if ver_list and file_type in ['org', 'src', 'editor']:
+                        return ver_list[-1]+1, ver_file_date[0]
+                    else:
+                        return 1, ""
+                else:
+                    return 1, ""
+            else:
+                return 1, ""
+
         else:
-            return published_ents[-1]['version_number']+1 ,published_ents[-1]['created_at']
+            key = [
+                    ['project','is',self.project],
+                    ['code','is',shot_name]
+                    ]
+
+            if self.project['name'] in ['nph', 'RND']:
+                key.append(['sg_status_list', 'not_in', ['omt', 'dis']])
+
+            shot_ent = self._sg.find_one('Shot',key)
+
+            key = [
+                    ['project','is',self.project],
+                    ['entity','is',shot_ent],
+                    ["published_file_type","is",file_type_ent],
+                    ['name','is',version_name]
+                ]
+            published_ents = self._sg.find("PublishedFile",key,['version_number','created_at'])
+            if not published_ents:
+                return 1,""
+            else:
+                return published_ents[-1]['version_number']+1 ,published_ents[-1]['created_at']
 
 
     def published_file_type(self,file_type):
@@ -199,6 +280,30 @@ class Validate(object):
             key  = [['code','is','Source']]
             return self._sg.find_one("PublishedFileType",key,['id'])
             
+
+    def _get_mov_version_key(self, file_name):
+        _, ext = os.path.splitext(file_name)
+
+        if ext != '.mov':
+            return -1
+
+        match = re.search(r'v(\d+)', file_name)
+        if match:
+            return int(match.group(1))
+        
+        return -1
+
+    def _get_image_version_key(self, dir_name):
+        _, ext = os.path.splitext(dir_name)
+
+        if ext:
+            return -1
+        
+        match = re.search(r'v(\d+)', dir_name)
+        if match:
+            return int(match.group(1))
+        
+        return -1
 
     def _get_data(self,row,col):
 
