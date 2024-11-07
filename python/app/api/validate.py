@@ -186,89 +186,85 @@ class Validate(object):
         shot_name = self._get_data(row,MODEL_KEYS['shot_name'])
         version_name = shot_name + "_" + file_type
 
-        if self.project['name'] in ['pamyo', 'RND', 'nph']:
-            seq_name = shot_name.split('_')[0]
-            plate_path = os.path.join(self._app.sgtk.project_path, 'seq', seq_name, shot_name, 'plate')
-            
-            if os.path.exists(plate_path):
-                plate_path_list = os.listdir(plate_path)
-                plate_path_list = sorted(plate_path_list, key=self._get_mov_version_key)
+        seq_name = shot_name.split('_')[0]
+        plate_path = os.path.join(self._app.sgtk.project_path, 'seq', seq_name, shot_name, 'plate')
+        
+        if os.path.exists(plate_path):
+            plate_path_list = os.listdir(plate_path)
+            plate_path_list = sorted(plate_path_list, key=self._get_mov_version_key)
 
-                if len(plate_path_list) > 0:
-                    ver_list = []
-                    ver_file_date = []
+            if len(plate_path_list) > 0:
+                ver_list = []
+                ver_file_date = []
 
-                    for plate in plate_path_list:
-                        mov_path = os.path.join(plate_path, plate)
+                for plate in plate_path_list:
+                    mov_path = os.path.join(plate_path, plate)
 
-                        file_name, ext = os.path.splitext(plate)
+                    file_name, ext = os.path.splitext(plate)
 
-                        plate_type = file_name.split('_')
-                        if len(plate_type) >= 4:
-                            plate_type = plate_type[-2]
-                        else:
-                            plate_type = ''
-                        
-                        mov_match = re.search(r'v(\d+)', plate)
-                        
-                        if os.path.isfile(mov_path) and ext == '.mov' and plate_type == file_type and file_type == 'editor' and mov_match\
-                            and int(mov_match.group(1)) not in ver_list:
-                            ver_list.append(int(mov_match.group(1)))
-                            
-                            time_stamp = os.path.getmtime(mov_path)
-                            dt = datetime.fromtimestamp(time_stamp)
-                            formatted_time = dt.strftime('%Y-%m-%d %H:%M:%S') + '+09:00'
-                            formatted_time = formatted_time[:-2] + formatted_time[-2:]
-                            ver_file_date.append(formatted_time)
-
-                        elif os.path.isdir(mov_path) and plate in ['org', 'src'] and file_type in ['org', 'src'] and plate == file_type:
-                            image_dir = mov_path
-                            image_ver_list = os.listdir(image_dir)
-                            image_ver_list = sorted(image_ver_list, key=self._get_image_version_key)
-
-                            for image in image_ver_list:
-                                image_path = os.path.join(image_dir, image)
-                                image_match = re.search(r'v(\d+)', image)
-                                if image_match and int(image_match.group(1)) not in ver_list:
-                                    ver_list.append(int(image_match.group(1)))
-
-                                    time_stamp = os.path.getmtime(image_path)
-                                    dt = datetime.fromtimestamp(time_stamp)
-                                    formatted_time = dt.strftime('%Y-%m-%d %H:%M:%S') + '+09:00'
-                                    formatted_time = formatted_time[:-2] + ':' + formatted_time[-2:]
-                                    ver_file_date.append(formatted_time)
-
-                    if ver_list and file_type in ['org', 'src', 'editor']:
-                        return ver_list[-1]+1, ver_file_date[0]
+                    plate_type = file_name.split('_')
+                    if len(plate_type) >= 4:
+                        plate_type = plate_type[-2]
                     else:
-                        return 1, ""
+                        plate_type = ''
+                    
+                    mov_match = re.search(r'v(\d+)', plate)
+                    
+                    if os.path.isfile(mov_path) and ext == '.mov' and plate_type == file_type and file_type == 'editor' and mov_match\
+                        and int(mov_match.group(1)) not in ver_list:
+                        ver_list.append(int(mov_match.group(1)))
+                        
+                        time_stamp = os.path.getmtime(mov_path)
+                        dt = datetime.fromtimestamp(time_stamp)
+                        formatted_time = dt.strftime('%Y-%m-%d %H:%M:%S') + '+09:00'
+                        ver_file_date.append(formatted_time)
+
+                    elif os.path.isdir(mov_path) and plate in ['org', 'src'] and file_type in ['org', 'src'] and plate == file_type:
+                        image_dir = mov_path
+                        image_ver_list = os.listdir(image_dir)
+                        image_ver_list = sorted(image_ver_list, key=self._get_image_version_key)
+
+                        for image in image_ver_list:
+                            image_path = os.path.join(image_dir, image)
+                            image_match = re.search(r'v(\d+)', image)
+                            if image_match and int(image_match.group(1)) not in ver_list:
+                                ver_list.append(int(image_match.group(1)))
+
+                                time_stamp = os.path.getmtime(image_path)
+                                dt = datetime.fromtimestamp(time_stamp)
+                                formatted_time = dt.strftime('%Y-%m-%d %H:%M:%S') + '+09:00'
+                                ver_file_date.append(formatted_time)
+
+                if ver_list and file_type in ['org', 'src', 'editor']:
+                    return ver_list[-1]+1, ver_file_date[-1]
                 else:
                     return 1, ""
             else:
                 return 1, ""
-
         else:
-            key = [
-                    ['project','is',self.project],
-                    ['code','is',shot_name]
-                    ]
+            return 1, ""
 
-            # if self.project['name'] in ['nph', 'RND']:
-            #     key.append(['sg_status_list', 'not_in', ['omt', 'dis']])
+        # key = [
+        #         ['project','is',self.project],
+        #         ['code','is',shot_name]
+        #         ]
 
-            shot_ent = self._sg.find_one('Shot',key)
+        # # if self.project['name'] in ['nph', 'RND']:
+        # #     key.append(['sg_status_list', 'not_in', ['omt', 'dis']])
 
-            key = [
-                    ['project','is',self.project],
-                    ['entity','is',shot_ent],
-                    ["published_file_type","is",file_type_ent],
-                    ['name','is',version_name]
-                ]
-            published_ents = self._sg.find("PublishedFile",key,['version_number','created_at'])
-            if not published_ents:
-                return 1,""
-            else:
-                return published_ents[-1]['version_number']+1 ,published_ents[-1]['created_at']
+        # shot_ent = self._sg.find_one('Shot',key)
+
+        # key = [
+        #         ['project','is',self.project],
+        #         ['entity','is',shot_ent],
+        #         ["published_file_type","is",file_type_ent],
+        #         ['name','is',version_name]
+        #     ]
+        # published_ents = self._sg.find("PublishedFile",key,['version_number','created_at'])
+        # if not published_ents:
+        #     return 1,""
+        # else:
+        #     return published_ents[-1]['version_number']+1 ,published_ents[-1]['created_at']
 
 
     def published_file_type(self,file_type):
