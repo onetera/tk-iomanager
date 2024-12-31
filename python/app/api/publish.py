@@ -354,17 +354,17 @@ class Publish:
 
         if self.master_input.retime_job:
             self.org_task = author.Task(title="create org")
-            cmd = ['rez-env', 'nuke-12', '--', 'nuke', '-ix', self.nuke_retime_script]
+            cmd = ['rez-env', 'nuke-12.2.2', '--', 'nuke', '-ix', self.nuke_retime_script]
             if not self.scan_colorspace.find("ACES") == -1:
-                cmd = ['rez-env', 'nuke-12', 'ocio_config', '--', 'nuke', '-ix', self.nuke_retime_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'ocio_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             if not self.scan_colorspace.find("Alexa") == -1:
-                cmd = ['rez-env', 'nuke-12', 'alexa_config', '--', 'nuke', '-ix', self.nuke_retime_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'alexa_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             if not self.scan_colorspace.find("legacy") == -1:
-                cmd = ['rez-env', 'nuke-12', 'legacy_config', '--', 'nuke', '-ix', self.nuke_retime_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'legacy_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             if not self.scan_colorspace.find("Sony") == -1:
-                cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_retime_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'sony_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             if not self.scan_colorspace.find("Arri") == -1:
-                cmd = ['rez-env', 'nuke-12', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_retime_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_retime_script]
                 if self.project['name'] in ["jung", "RND"]:
                     cmd = ['rez-env', 'nuke-13', 'aces_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             command = author.Command(argv=cmd)
@@ -373,23 +373,23 @@ class Publish:
 
         elif self.nuke_mov_script:
             self.org_task = author.Task(title="create mov")
-            cmd = ['rez-env', 'nuke-12', '--', 'nuke', '-ix', self.nuke_mov_script]
+            cmd = ['rez-env', 'nuke-12.2.2', '--', 'nuke', '-ix', self.nuke_mov_script]
             if self.project['name'] in ["jung", "RND"]:
                 cmd = ['rez-env', 'nuke-13', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("ACES") == -1:
-                cmd = ['rez-env', 'nuke-12', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find( 'Output' ) == -1:
-                cmd = ['rez-env', 'nuke-12', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
                 if self.project['name'] in ["jung", "RND"]:
                     cmd = ['rez-env', 'nuke-13', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("Alexa") == -1:
-                cmd = ['rez-env', 'nuke-12', 'alexa_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'alexa_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("legacy") == -1:
-                cmd = ['rez-env', 'nuke-12', 'legacy_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'legacy_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("Sony") == -1:
-                cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("Arri") == -1:
-                cmd = ['rez-env', 'nuke-12', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_mov_script]
                 if self.project['name'] in ["jung", "RND"]:
                     cmd = ['rez-env', 'nuke-13', 'aces_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if self._opt_dpx == True:
@@ -480,15 +480,15 @@ class Publish:
         tmp_org_jpg_script = self.create_nuke_temp_script(read_path)
 
         if not self.scan_colorspace.find("ACES") == -1:
-            cmd = ['rez-env', 'nuke-12', 'ocio_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
+            cmd = ['rez-env', 'nuke-12.2.2', 'ocio_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
         if not self.scan_colorspace.find("Alexa") == -1:
-            cmd = ['rez-env', 'nuke-12', 'alexa_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
+            cmd = ['rez-env', 'nuke-12.2.2', 'alexa_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
         if not self.scan_colorspace.find("legacy") == -1:
-            cmd = ['rez-env', 'nuke-12', 'legacy_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
+            cmd = ['rez-env', 'nuke-12.2.2', 'legacy_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
         if not self.scan_colorspace.find("Sony") == -1:
-            cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
+            cmd = ['rez-env', 'nuke-12.2.2', 'sony_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
         if not self.scan_colorspace.find("Arri") == -1:
-            cmd = ['rez-env', 'nuke-12', 'alexa4_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
+            cmd = ['rez-env', 'nuke-12.2.2', 'alexa4_config', '--', 'nuke', '-ix', tmp_org_jpg_script]
 
         command = author.Command(argv=cmd)
         self.copy_jpg_task.addCommand(command)
@@ -748,7 +748,7 @@ class Publish:
             return None
 
         self.jpg_task = author.Task(title="render jpg")
-        cmd = ['rez-env', 'nuke-12', '--', 'nuke', '-ix', self.nuke_script]
+        cmd = ['rez-env', 'nuke-12.2.2', '--', 'nuke', '-ix', self.nuke_script]
         if self._opt_dpx == True:
             print('------------------------------------')
             print(self.project['name'])
@@ -781,15 +781,15 @@ class Publish:
             
         else:
             if not self.scan_colorspace.find("ACES") == -1 or self.scan_colorspace == 'Output - Rec.709':
-                cmd = ['rez-env', 'nuke-12', 'ocio_config', '--', 'nuke', '-ix', self.nuke_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'ocio_config', '--', 'nuke', '-ix', self.nuke_script]
             if not self.scan_colorspace.find("Alexa") == -1:
-                cmd = ['rez-env', 'nuke-12', 'alexa_config', '--', 'nuke', '-ix', self.nuke_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'alexa_config', '--', 'nuke', '-ix', self.nuke_script]
             if not self.scan_colorspace.find("legacy") == -1:
-                cmd = ['rez-env', 'nuke-12', 'legacy_config', '--', 'nuke', '-ix', self.nuke_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'legacy_config', '--', 'nuke', '-ix', self.nuke_script]
             if not self.scan_colorspace.find("Sony") == -1:
-                cmd = ['rez-env', 'nuke-12', 'sony_config', '--', 'nuke', '-ix', self.nuke_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'sony_config', '--', 'nuke', '-ix', self.nuke_script]
             if not self.scan_colorspace.find("Arri") == -1:
-                cmd = ['rez-env', 'nuke-12', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_script]
+                cmd = ['rez-env', 'nuke-12.2.2', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_script]
         if self.master_input.ext in ["mov","mxf"] and self._opt_dpx == False:
             cmd = ["echo", "'pass'"]
 
@@ -1256,7 +1256,7 @@ class Publish:
 
                 with open( self.jpg4mov_alexaV3logC_py, 'w' ) as f:
                     f.write( jpg4mov_nk )
-                nk += 'os.system( "rez-env nuke-12 alexa_config -- nuke -ix {}" )\n'.format( self.jpg4mov_alexaV3logC_py )
+                nk += 'os.system( "rez-env nuke-12.2.2 alexa_config -- nuke -ix {}" )\n'.format( self.jpg4mov_alexaV3logC_py )
                 # nk += 'os.remove( "{}" )\n'.format( self.jpg4mov_alexaV3logC_py )
                 nk += 'read = app.createReader("{}")\n'.format( self.jpg4mov_output )
                 nk += 'read.getParam("ocioInputSpace").setValue("rec709")\n'
@@ -1774,7 +1774,7 @@ class Publish:
             if not self.scan_colorspace.find( 'Output' ) == -1:
                 color_config = 'ocio_config'
 
-            nk += 'os.system("rez-env nuke-12 {} -- nuke -ix {}")\n'.format(color_config, self.tmp_dpx_to_jpg_file)
+            nk += 'os.system("rez-env nuke-12.2.2 {} -- nuke -ix {}")\n'.format(color_config, self.tmp_dpx_to_jpg_file)
             # if int(width) > 2048:
             #     nk += 'jpg_2k_dir = os.path.dirname("{}")\n'.format(jpg_2k_path)
             #     nk += 'jpg_2k_list = sorted(os.listdir(jpg_2k_dir))\n'
