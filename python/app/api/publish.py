@@ -652,11 +652,12 @@ class Publish:
 
         read_path = os.path.join(plate_seq_path, plate_name + ".%04d." + self.file_ext)
         if self.master_input.ext in ["mov","mxf"] and self.seq_type != 'lib':
-            colorspace = self.scan_colorspace.replace("ACES-", "")
+            # colorspace = self.scan_colorspace.replace("ACES-", "")
+
             read_path = os.path.join(self._app.sgtk.project_path, 'seq',
                                      self.seq_name,
                                      self.shot_name, "plate",
-                                     self.plate_file_name + "_" + colorspace + ".mov")
+                                     self.plate_file_name + ".mov")
 
         key = [
                ['entity', 'is', self.shot_ent],
@@ -1213,11 +1214,11 @@ class Publish:
         scan_path = os.path.join(self.master_input.scan_path,
                                  self.master_input.scan_name
                                  )
-        colorspace = self.scan_colorspace.replace("ACES-", "")
-        org_path = os.path.join(self._app.sgtk.project_path, 'seq',
-                                self.seq_name,
-                                self.shot_name, "plate",
-                                self.plate_file_name + "_" + colorspace + ".mov")
+        # colorspace = self.scan_colorspace.replace("ACES-", "")
+        # org_path = os.path.join(self._app.sgtk.project_path, 'seq',
+        #                         self.seq_name,
+        #                         self.shot_name, "plate",
+        #                         self.plate_file_name + "_" + colorspace + ".mov")
         mov_path = os.path.join(self._app.sgtk.project_path, 'seq',
                                 self.seq_name,
                                 self.shot_name, "plate",
@@ -1327,19 +1328,19 @@ class Publish:
                 if self.setting.datatype == '10 bit' and self.master_input.ext == "mxf":
                     nk += 'read["dataRange"].setValue("Video Range")\n'
             tg = 'read'
-            nk += 'output = "{}"\n'.format(org_path)
-            nk += 'write = nuke.nodes.Write(name="Write_org", inputs = [%s],file=output )\n' % tg
-            nk += 'write["file_type"].setValue( "mov" )\n'
-            nk += 'write["create_directories"].setValue(True)\n'
-            nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
-            if self.setting.dnxhd_profile:
-                nk += 'write["mov64_dnxhd_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhd_profile )
-            if self.setting.dnxhr_profile:
-                nk += 'write["mov64_dnxhr_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhr_profile )
-            nk += 'write["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
-            nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
-            nk += 'nuke.execute(write,{0},{1},1)\n'.format(int(self.master_input.just_in),
-                                                           int(self.master_input.just_out))
+            # nk += 'output = "{}"\n'.format(org_path)
+            # nk += 'write = nuke.nodes.Write(name="Write_org", inputs = [%s],file=output )\n' % tg
+            # nk += 'write["file_type"].setValue( "mov" )\n'
+            # nk += 'write["create_directories"].setValue(True)\n'
+            # nk += 'write["mov64_codec"].setValue( "{}")\n'.format(self.setting.mov_codec)
+            # if self.setting.dnxhd_profile:
+            #     nk += 'write["mov64_dnxhd_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhd_profile )
+            # if self.setting.dnxhr_profile:
+            #     nk += 'write["mov64_dnxhr_codec_profile"].setValue( "{}")\n'.format(self.setting.dnxhr_profile )
+            # nk += 'write["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
+            # nk += 'write["mov64_fps"].setValue({})\n'.format(self.master_input.framerate)
+            # nk += 'nuke.execute(write,{0},{1},1)\n'.format(int(self.master_input.just_in),
+            #                                                int(self.master_input.just_out))
 
             nk += 'output = "{}"\n'.format(mov_path)
             nk += 'write = nuke.nodes.Write(name="Write_mov", inputs = [%s],file=output )\n' % tg
