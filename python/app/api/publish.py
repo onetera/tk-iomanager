@@ -365,7 +365,7 @@ class Publish:
                 cmd = ['rez-env', 'nuke-12.2.2', 'sony_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             if not self.scan_colorspace.find("Arri") == -1:
                 cmd = ['rez-env', 'nuke-12.2.2', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_retime_script]
-                if self.project['name'] in ["jung", "RND"]:
+                if self.project['name'] in ["jung"]:
                     cmd = ['rez-env', 'nuke-13', 'aces_config', '--', 'nuke', '-ix', self.nuke_retime_script]
             command = author.Command(argv=cmd)
             self.org_task.addCommand(command)
@@ -374,13 +374,13 @@ class Publish:
         elif self.nuke_mov_script:
             self.org_task = author.Task(title="create mov")
             cmd = ['rez-env', 'nuke-12.2.2', '--', 'nuke', '-ix', self.nuke_mov_script]
-            if self.project['name'] in ["jung", "RND"]:
+            if self.project['name'] in ["jung"]:
                 cmd = ['rez-env', 'nuke-13', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("ACES") == -1:
                 cmd = ['rez-env', 'nuke-12.2.2', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find( 'Output' ) == -1:
                 cmd = ['rez-env', 'nuke-12.2.2', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
-                if self.project['name'] in ["jung", "RND"]:
+                if self.project['name'] in ["jung"]:
                     cmd = ['rez-env', 'nuke-13', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("Alexa") == -1:
                 cmd = ['rez-env', 'nuke-12.2.2', 'alexa_config', '--', 'nuke', '-ix', self.nuke_mov_script]
@@ -390,17 +390,20 @@ class Publish:
                 cmd = ['rez-env', 'nuke-12.2.2', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if not self.scan_colorspace.find("Arri") == -1:
                 cmd = ['rez-env', 'nuke-12.2.2', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_mov_script]
-                if self.project['name'] in ["jung", "RND"]:
+                if self.project['name'] in ["jung"]:
                     cmd = ['rez-env', 'nuke-13', 'aces_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             if self._opt_dpx == True:
                 if self.seq_type != 'lib' and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
                     cmd = ["echo", "'pass'"]
-                if self.seq_type == 'lib':
+                elif self.seq_type == 'lib':
                     cmd = ["echo", "'pass'"]
-            if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace != 'Sony.rec709' :
-                cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
-            if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace == 'Arri4.rec709' :
-                cmd = ['rez-env', 'natron', 'alexa4_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
+            if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
+                if self.scan_colorspace != 'Sony.rec709':
+                    cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
+                elif self.scan_colorspace == 'Arri4.rec709':
+                    cmd = ['rez-env', 'natron', 'alexa4_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
+                elif self.project['name'] in ['marry']:
+                    cmd = ['rez-env', 'nuke-12.2.2', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
             # if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace != 'Arri4.rec709' :
             #     cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
 
@@ -754,7 +757,7 @@ class Publish:
             print('------------------------------------')
             print(self.project['name'])
             print('------------------------------------')
-            if self.project['name'] not in ['jung', 'RND']:
+            if self.project['name'] not in ['jung', 'RND', 'marry']:
                 cmd = ['rez-env', 'natron', '--', 'NatronRenderer', '-t', self.nuke_script]
                 if not self.scan_colorspace.find("ACES") == -1:
                     cmd = ['rez-env', 'natron', 'ocio_config', '--', 'NatronRenderer', '-t', self.nuke_script]
@@ -769,16 +772,21 @@ class Publish:
             ### 정년이[jung] 프로젝트에서는 natron을 사용하지 않기로 I/O팀과 결정
             ##  정년이[jung] 종료 이후에는 복구가능한 코드
             else:
+                if self.project['name'] in ['jung']:
+                    nuke_ver = 'nuke-13'
+                else:
+                    nuke_ver = 'nuke-12.2.2'
+
                 if not self.scan_colorspace.find("ACES") == -1 or self.scan_colorspace =='Output - Rec.709':
-                    cmd = ['rez-env', 'nuke-13', 'ocio_config', '--', 'nuke', '-ix', self.nuke_script]
+                    cmd = ['rez-env', nuke_ver, 'ocio_config', '--', 'nuke', '-ix', self.nuke_script]
                 if not self.scan_colorspace.find("Alexa") == -1:
-                    cmd = ['rez-env', 'nuke-13', 'alexa_config', '--', 'nuke', '-ix', self.nuke_script]
+                    cmd = ['rez-env', nuke_ver, 'alexa_config', '--', 'nuke', '-ix', self.nuke_script]
                 if not self.scan_colorspace.find("legacy") == -1:
-                    cmd = ['rez-env', 'nuke-13', 'legacy_config', '--', 'nuke', '-ix', self.nuke_script]
+                    cmd = ['rez-env', nuke_ver, 'legacy_config', '--', 'nuke', '-ix', self.nuke_script]
                 if not self.scan_colorspace.find("Sony") == -1:
-                    cmd = ['rez-env', 'nuke-13', 'sony_config', '--', 'nuke', '-ix', self.nuke_script]
+                    cmd = ['rez-env', nuke_ver, 'sony_config', '--', 'nuke', '-ix', self.nuke_script]
                 if not self.scan_colorspace.find("Arri") == -1:
-                    cmd = ['rez-env', 'nuke-13', 'aces_config', '--', 'nuke', '-ix', self.nuke_script]
+                    cmd = ['rez-env', nuke_ver, 'aces_config', '--', 'nuke', '-ix', self.nuke_script]
             
         else:
             if not self.scan_colorspace.find("ACES") == -1 or self.scan_colorspace == 'Output - Rec.709':
@@ -1322,7 +1330,7 @@ class Publish:
             nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
             nk += 'read["first"].setValue( {} )\n'.format(int(self.master_input.just_in))
             nk += 'read["last"].setValue( {} )\n'.format(int(self.master_input.just_out))
-            if self.project['name'] in ['jung', 'RND']:
+            if self.project['name'] in ['jung']:
                 if self.master_input.ext == "mov":
                     nk += 'read["mov64_decode_video_levels"].setValue("Video Range")\n'
                 if self.setting.datatype == '10 bit' and self.master_input.ext == "mxf":
@@ -1400,7 +1408,7 @@ class Publish:
         if int(width) > 2048:
             nk += 'reformat = nuke.nodes.Reformat(inputs=[%s],type=2,scale=.5)\n' % tg
             reformat = 'reformat'
-        if self.project['name'] not in ['jung', 'RND'] :
+        if self.project['name'] not in ['jung'] :
             nk += 'output = "{}"\n'.format(mov_path)
             if int(width) > 2048:
                 nk += 'write   = nuke.nodes.Write(name="mov_write", inputs = [%s],file=output )\n' % reformat
@@ -1475,7 +1483,7 @@ class Publish:
             nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
             if self.file_ext in ["dpx"] and self.project['name'] == "sweethome":
                 nk += 'read["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
-            elif self.project['name'] == 'jung' or self.project['name'] == 'RND':
+            elif self.project['name'] in ['jung']:
                 if self.setting.datatype == '10 bit':
                     if self.master_input.ext == "mov":
                         nk += 'read["mov64_decode_video_levels"].setValue("Video Range")\n'
@@ -1545,7 +1553,7 @@ class Publish:
         ### 정년이[jung] 프로젝트에서는 natron을 사용하지 않기로 I/O팀과 결정
         ##  정년이[jung] 종료 이후에는 복구가능한 코드 
         # -> 프로젝트 종료 후에도 aces_config 사용하면 natron 대신 nuke 사용할 수도 있음
-        elif self._opt_dpx == True and self.project['name'] in ['jung', 'RND']:
+        elif self._opt_dpx == True and self.project['name'] in ['jung', 'RND', 'marry']:
             img_nk = ''
             self.use_natron = False
 
@@ -1569,6 +1577,7 @@ class Publish:
                                                    self.plate_file_name + "_jpg.py")
             self.use_natron = False
             nk = ''
+            nk += 'import os\n'
             nk += 'import nuke\n'
             nk += 'nuke.knob("root.first_frame", "{}")\n'.format(start_frame)
             nk += 'nuke.knob("root.last_frame", "{}")\n'.format(end_frame)
@@ -1581,10 +1590,11 @@ class Publish:
             # nk += 'read["colorspace"].setValue("{}")\n'.format( "rec709" )
             nk += 'read["first"].setValue({})\n'.format(start_frame)
             nk += 'read["last"].setValue({})\n'.format(end_frame)
-            if self.master_input.ext == "mov":
-                nk += 'read["mov64_decode_video_levels"].setValue("Video Range")\n'
-            if self.setting.datatype == '10 bit' and self.master_input.ext == "mxf":
-                nk += 'read["dataRange"].setValue("Video Range")\n'
+            if self.project['name'] in ['jung']:
+                if self.master_input.ext == "mov":
+                    nk += 'read["mov64_decode_video_levels"].setValue("Video Range")\n'
+                if self.setting.datatype == '10 bit' and self.master_input.ext == "mxf":
+                    nk += 'read["dataRange"].setValue("Video Range")\n'
             tg = 'read'
             nk += 'output = "{}"\n'.format(dpx_path)
             nk += 'write  = nuke.nodes.Write(name="ww_write", inputs = [read], file=output )\n'
@@ -1625,8 +1635,11 @@ class Publish:
             if not self.scan_colorspace.find( "Output" ) == -1:
                 color_config = 'ocio_config'
 
-
-            nk += 'os.system("rez-env nuke-13 {} -- nuke -ix {}")\n'.format(color_config, self.tmp_dpx_to_jpg_file)
+            if self.project['name'] in ['jung']:
+                nuke_ver = 'nuke-13'
+            else:
+                nuke_ver = 'nuke-12.2.2'
+            nk += 'os.system("rez-env {} {} -- nuke -ix {}")\n'.format(nuke_ver, color_config, self.tmp_dpx_to_jpg_file)
 
             nk += 'dpx_output_dir = os.path.dirname("{}")\n'.format(dpx_path)
             nk += 'dpx_output_list = sorted(os.listdir(dpx_output_dir))\n'
