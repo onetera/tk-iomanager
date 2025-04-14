@@ -400,8 +400,8 @@ class Publish:
             if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
                 if self.project['name'] in ['marry']:
                     cmd = ['rez-env', 'nuke-12.2.2', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
-                # elif self.project['name'] in ['asura']:
-                #     cmd = ['rez-env', 'nuke-12.2.2', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+                elif self.project['name'] in ['asura']:
+                    cmd = ['rez-env', 'nuke-12.2.2', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_mov_script]
                 elif self.project['name'] in ['4thlove']:
                     cmd = ['rez-env', 'nuke-12.2.2', 'alexa_config', '--', 'nuke', '-ix', self.nuke_mov_script]
                 elif self.scan_colorspace != 'Sony.rec709':
@@ -761,7 +761,7 @@ class Publish:
             print('------------------------------------')
             print(self.project['name'])
             print('------------------------------------')
-            if self.project['name'] not in ['jung', 'RND', 'marry', '4thlove']:
+            if self.project['name'] not in ['jung', 'RND', 'marry', '4thlove', 'asura']:
                 cmd = ['rez-env', 'natron', '--', 'NatronRenderer', '-t', self.nuke_script]
                 if not self.scan_colorspace.find("ACES") == -1:
                     cmd = ['rez-env', 'natron', 'ocio_config', '--', 'NatronRenderer', '-t', self.nuke_script]
@@ -1245,7 +1245,7 @@ class Publish:
             os.system( 'touch ' + mov_path )
 
         if (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace != 'Sony.rec709'\
-            and  self.project['name'] not in ['4thlove']:
+            and  self.project['name'] not in ['4thlove', 'asura']:
             self.use_natron = True
         # if (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h") and self.scan_colorspace != 'Arri4.rec709':
         #     self.use_natron = True
@@ -1335,7 +1335,7 @@ class Publish:
             nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
             nk += 'read["first"].setValue( {} )\n'.format(int(self.master_input.just_in))
             nk += 'read["last"].setValue( {} )\n'.format(int(self.master_input.just_out))
-            if self.project['name'] in ['jung']:
+            if self.project['name'] in ['jung', 'marry', '4thlove', 'RND', 'asura']:
                 if self.master_input.ext == "mov":
                     nk += 'read["mov64_decode_video_levels"].setValue("Video Range")\n'
                 if self.setting.datatype == '10 bit' and self.master_input.ext == "mxf":
@@ -1488,7 +1488,7 @@ class Publish:
             nk += 'read["colorspace"].setValue("{}")\n'.format(self.scan_colorspace)
             if self.file_ext in ["dpx"] and self.project['name'] == "sweethome":
                 nk += 'read["colorspace"].setValue("{}")\n'.format(colorspace_set[self.scan_colorspace])
-            elif self.project['name'] in ['jung']:
+            elif self.project['name'] in ['jung', 'marry', '4thlove', 'RND', 'asura']:
                 if self.setting.datatype == '10 bit':
                     if self.master_input.ext == "mov":
                         nk += 'read["mov64_decode_video_levels"].setValue("Video Range")\n'
@@ -1558,7 +1558,7 @@ class Publish:
         ### 정년이[jung] 프로젝트에서는 natron을 사용하지 않기로 I/O팀과 결정
         ##  정년이[jung] 종료 이후에는 복구가능한 코드 
         # -> 프로젝트 종료 후에도 aces_config 사용하면 natron 대신 nuke 사용할 수도 있음
-        elif self._opt_dpx == True and self.project['name'] in ['jung', 'RND', 'marry', '4thlove']:
+        elif self._opt_dpx == True and self.project['name'] in ['jung', 'RND', 'marry', '4thlove', 'asura']:
             img_nk = ''
             self.use_natron = False
 
@@ -1595,7 +1595,7 @@ class Publish:
             # nk += 'read["colorspace"].setValue("{}")\n'.format( "rec709" )
             nk += 'read["first"].setValue({})\n'.format(start_frame)
             nk += 'read["last"].setValue({})\n'.format(end_frame)
-            if self.project['name'] in ['jung']:
+            if self.project['name'] in ['jung', 'marry', '4thlove', 'RND', 'asura']:
                 if self.master_input.ext == "mov":
                     nk += 'read["mov64_decode_video_levels"].setValue("Video Range")\n'
                 if self.setting.datatype == '10 bit' and self.master_input.ext == "mxf":
