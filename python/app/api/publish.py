@@ -401,9 +401,9 @@ class Publish:
                 if self.project['name'] in ['marry']:
                     cmd = ['rez-env', 'nuke-12.2.2', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
                 elif self.project['name'] in ['asura']:
-                    cmd = ['rez-env', 'nuke-12.2.2', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_mov_script]
-                elif self.project['name'] in ['4thlove', 'waiting']:
                     cmd = ['rez-env', 'nuke-12.2.2', 'alexa_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+                elif self.project['name'] in ['4thlove', 'waiting']:
+                    cmd = ['rez-env', 'nuke-12.2.2', 'alexa4_config', '--', 'nuke', '-ix', self.nuke_mov_script]
                 elif self.scan_colorspace != 'Sony.rec709':
                     cmd = ['rez-env', 'natron', 'alexa_config', '--', 'NatronRenderer', '-t', self.nuke_mov_script]
                 elif self.scan_colorspace == 'Arri4.rec709':
