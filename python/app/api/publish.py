@@ -399,7 +399,10 @@ class Publish:
                     cmd = ["echo", "'pass'"]
             if self._opt_dpx == False and (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
                 if self.project['name'] in ['marry']:
-                    cmd = ['rez-env', 'nuke-12.2.2', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+                    if not self.scan_colorspace.find('Output') == -1:
+                        cmd = ['rez-env', 'nuke-12.2.2', 'ocio_config', '--', 'nuke', '-ix', self.nuke_mov_script]
+                    else:
+                        cmd = ['rez-env', 'nuke-12.2.2', 'sony_config', '--', 'nuke', '-ix', self.nuke_mov_script]
                 elif self.project['name'] in ['asura']:
                     cmd = ['rez-env', 'nuke-12.2.2', 'alexa_config', '--', 'nuke', '-ix', self.nuke_mov_script]
                 elif self.project['name'] in ['4thlove', 'waiting']:
@@ -1246,9 +1249,9 @@ class Publish:
 
         drama_flag = True
         if (self.setting.mov_codec == "apch" or self.setting.mov_codec == "ap4h"):
-            if self.scan_colorspace == 'Sony.rec709' and self.project['name'] in ['4thlove', 'asura', 'waiting']:
+            if self.scan_colorspace == 'Sony.rec709' and self.project['name'] in ['4thlove', 'asura', 'waiting', 'marry']:
                 drama_flag = False
-            elif self.scan_colorspace == 'rec709' and self.project['name'] in ['marry']:
+            elif self.scan_colorspace in ['rec709', 'Output - Rec.709'] and self.project['name'] in ['marry']:
                 drama_flag = False
             
             if drama_flag:
